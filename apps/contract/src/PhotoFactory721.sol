@@ -29,62 +29,114 @@ import {ERC721Royalty} from "@openzeppelin/contracts/token/ERC721/extensions/ERC
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract PhotoFactory721 is ERC721, ERC721URIStorage, Ownable {
-    // Errors
+  // Errors
+  error PhotoFactory721__InvalidPhotoTokenId(); // tokenId is invalid
+  error PhotoFactory721__InvalidPrice(); // price is invalid
 
-    struct Photo {
-        string photoName;
-        uint256 editionSize;
-        string tokenURI;
-        string description;
-        bool minted;
+  // state variables
+  address public contractOwner; // onwer of the contract
+  uint256 private s_photoCounter; // counter of photos, but used as tokenId
+  uint256 private s_itemsSold; // counter of items sold
+  // PhotoItem[] public photoes; // array of counter
+  address[] public minters;
+
+  struct PhotoItem {
+    uint256 tokenId;
+    string photoName;
+    uint256 editionSize;
+    string tokenURI;
+    string description;
+    address buyer; // address of the buyer
+    bool minted;
+    uint256 price; // price of the item
+  }
+
+  struct AiGeneratedVariant {
+    string aiURI;
+    string generationDate;
+    bool minted;
+  }
+
+  mapping(uint256 => PhotoItem) public photoItem;
+  mapping(uint256 => AiGeneratedVariant) public aiGeneratedVariant;
+
+  // Events
+  event OneOfOnePhotoMinted(
+    address indexed onwer,
+    uint256 indexed tokenId,
+    string tokenURI,
+    uint256 price
+  );
+
+  // Modifiers
+
+  constructor(
+    address initialOwner
+  ) ERC721("PhotoFactory", "PF") Ownable(initialOwner) {
+    contractOwner = msg.sender; // change to dev wallet
+    s_photoCounter = 0;
+    s_itemsSold = 0;
+  }
+
+  function mintERC721(
+    string memory _tokenURI,
+    string memory _description,
+    string memory _photoName,
+    uint256 _price
+  ) public payable {
+    if (msg.value != _price) {
+      revert PhotoFactory721__InvalidPrice();
     }
 
-    // Events
-    event OneOfOnePhotoMinted(
-        address indexed onwer,
-        uint256 indexed tokenId,
-        string tokenURI
+    photoItem[s_photoCounter].tokenURI = _tokenURI;
+
+    photoItem[s_photoCounter].buyer = msg.sender;
+
+    photoItem[s_photoCounter] = PhotoItem(
+      s_photoCounter,
+      _photoName,
+      1,
+      _tokenURI,
+      _description,
+      msg.sender, // address of the buyer
+      true,
+      _price
     );
 
-    constructor(
-        address initialOwner
-    ) ERC721("PhotoFactory", "PF") Ownable(initialOwner) {}
+    _safeMint(msg.sender, s_photoCounter);
+    _setTokenURI(s_photoCounter, _tokenURI);
 
-    function mintERC721(
-        string memory _tokenURI,
-        string memory _description,
-        string memory _photoName
-    ) public {
-        s_tokenIdToTokenURI[s_photoCounter] = _tokenURI;
+    //emit
+    emit OneOfOnePhotoMinted(msg.sender, s_photoCounter, _tokenURI, _price);
 
-        photoes[s_photoCounter] = Photo(
-            _photoName,
-            1,
-            _tokenURI,
-            _description,
-            true
-        );
+    //TODO: create ai generated photo
+    minters.push(msg.sender);
+    s_photoCounter++;
+  }
 
-        minters.push(msg.sender);
+  // Added required override functions
+  function tokenURI(
+    uint256 tokenId
+  ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    return super.tokenURI(tokenId);
+  }
 
-        _safeMint(msg.sender, s_photoCounter);
-        _setTokenURI(s_photoCounter, _tokenURI);
-        s_photoCounter++;
+  function supportsInterface(
+    bytes4 interfaceId
+  ) public view override(ERC721, ERC721URIStorage) returns (bool) {
+    return super.supportsInterface(interfaceId);
+  }
 
-        //emit
-        emit OneOfOnePhotoMinted(msg.sender, s_photoCounter, _tokenURI);
+  function getPrice(uint _tokenId) public view returns (uint256) {
+    return photoItem[_tokenId].price;
+  }
+
+  function createAiVariant(
+    uint256 _tokenId,
+    string memory _aiVariantURI
+  ) public {
+    if (photoItem[_tokenId].tokenId != _tokenId) {
+      revert PhotoFactory721__InvalidPhotoTokenId();
     }
-
-    // Added required override functions
-    function tokenURI(
-        uint256 tokenId
-    ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-        return super.tokenURI(tokenId);
-    }
-
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC721, ERC721URIStorage) returns (bool) {
-        return super.supportsInterface(interfaceId);
-    }
+  }
 }
