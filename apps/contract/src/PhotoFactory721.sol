@@ -26,60 +26,76 @@ pragma solidity ^0.8.27;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {ERC721Royalty} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
+import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract PhotoFactory721 is ERC721, ERC721URIStorage, Ownable {
-  // Errors
-  error PhotoFactory721__InvalidPhotoTokenId(); // tokenId is invalid
-  error PhotoFactory721__InvalidPrice(); // price is invalid
+/*
+ * @title PhotoFactory721
+ * @author Nkemjika
+ * @notice This contract handles ERC721 photo minting for Phtoes
+ * @dev Implements ERC721, ERC721URIStorage, ERC2981 for royalties
+ */
 
-  // state variables
-  address public contractOwner; // onwer of the contract
+contract PhotoFactory721 is ERC721, ERC721URIStorage, Ownable, ERC2981 {
+    // Errors
+    error PhotoFactory721__InvalidURI(); //tokenURI is invalid
+    error PhotoFactory721__InvalidPhotoTokenId(); // tokenId is inva:wlid
+    error PhotoFactory721__InvalidPrice(); // price is invalid
 
-  // Events
-  event OneOfOnePhotoMinted(
-    address indexed onwer,
-    uint256 indexed tokenId,
-    string tokenURI,
-    uint256 price
-  );
+    // state variables
+    address public CONTRACT_OWNER; // onwer of the contract
+    uint96 public constant ROYALTY_FEE_NUMERATOR = 500; // 5%
 
-  // Modifiers
+    // Events
+    event OneOfOnePhotoMinted(uint256 indexed tokenId, string tokenURI);
 
-  constructor(
-    address initialOwner
-  ) ERC721("PhotoFactory", "PF") Ownable(initialOwner) {
-    contractOwner = msg.sender; // change to dev wallet
-  }
+    event RoyaltyUpdated(uint256 indexed tokenId, address receiver, uint96 feeNumerator);
 
-  function mintERC721(
-    string memory _tokenURI,
-    uint256 _price,
-    uint256 _tokenId
-  ) public payable {
-    if (msg.value != _price) {
-      revert PhotoFactory721__InvalidPrice();
+    // Modifiers
+
+    constructor(address initialOwner) ERC721("PhotoFactory", "PF") Ownable(initialOwner) {
+        CONTRACT_OWNER = msg.sender; // change to dev wallet
     }
 
-    _safeMint(msg.sender, _tokenId);
-    _setTokenURI(_tokenId, _tokenURI);
+    function mintERC721(string memory _tokenURI, uint256 _tokenId) public payable onlyOwner {
+        if (bytes(_tokenURI).length == 0) revert PhotoFactory721__InvalidURI();
+        _safeMint(msg.sender, _tokenId);
+        _setTokenURI(_tokenId, _tokenURI);
 
-    //emit
-    emit OneOfOnePhotoMinted(msg.sender, _tokenId, _tokenURI, _price);
+        // Set royalty for ERC721 token
+        _setTokenRoyalty(_tokenId, owner(), ROYALTY_FEE_NUMERATOR);
 
-    //TODO: create ai generated photo
-  }
+        //emit
+        emit OneOfOnePhotoMinted(_tokenId, _tokenURI);
 
-  // Added required override functions
-  function tokenURI(
-    uint256 tokenId
-  ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-    return super.tokenURI(tokenId);
-  }
+        //TODO: create ai generated photo
+    }
 
-  function supportsInterface(
-    bytes4 interfaceId
-  ) public view override(ERC721, ERC721URIStorage) returns (bool) {
-    return super.supportsInterface(interfaceId);
-  }
+    function updateRoyaltyInfo(uint256 tokenId, address receiver, uint96 feeNumerator) public onlyOwner {
+        _setTokenRoyalty(tokenId, receiver, feeNumerator);
+    }
+
+    function getRoyaltyInfo(uint256 tokenId, uint256 salePrice) public view returns (address, uint256) {
+        return royaltyInfo(tokenId, salePrice);
+    }
+
+    function withdraw() public onlyOwner {
+        uint256 balance = address(this).balance;
+        (bool success,) = payable(owner()).call{value: balance}("");
+        require(success, "Transfer failed");
+    }
+
+    // Added required override functions
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721URIStorage, ERC2981)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
 }
