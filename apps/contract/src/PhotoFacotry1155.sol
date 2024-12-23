@@ -31,8 +31,8 @@ import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
 /*
  * @title PhotoFactory1155
  * @author Nkemjika
- * @notice This contract handles ERC11155 photo minting for Phtoes
- * @dev Implements ERC1155, ERC1155SUPPLY, Ownable
+ * @notice This contract handles ERC11155 photo minting on Phtoes
+ * @dev Implements ERC1155, ERC1155SUPPLY, Ownable, ERC2981
  */
 
 contract PhotoFactory1155 is ERC1155, Ownable, ERC1155Supply, ERC2981 {
@@ -46,6 +46,7 @@ contract PhotoFactory1155 is ERC1155, Ownable, ERC1155Supply, ERC2981 {
 
     // Events
     event MultipleTokenMinted(address indexed to, uint256 indexed id, uint256 amount);
+
     event BatchMinted(address indexed to, uint256[] ids, uint256[] amounts);
 
     constructor(address initialOwner) ERC1155("") Ownable(initialOwner) {}
@@ -71,19 +72,23 @@ contract PhotoFactory1155 is ERC1155, Ownable, ERC1155Supply, ERC2981 {
         onlyOwner
     {
         if (to == address(0)) revert PhotoFactory1155__InvalidAddress();
+        require(ids.length == amounts.length, "Length mismatch");
         _mintBatch(to, ids, amounts, data);
-    }
 
-    function setTokenRoyalty(uint256 tokenId) internal {
-        _setTokenRoyalty(tokenId, owner(), ROYALTY_FEE_NUMERATOR);
+        for (uint256 i = 0; i < ids.length; i++) {
+            _setTokenRoyalty(ids[i], owner(), ROYALTY_FEE_NUMERATOR);
+        }
+
+        emit BatchMinted(to, amounts, amounts);
     }
 
     function getTokenSupply(uint256 id) public view returns (uint256) {
         return totalSupply(id);
     }
 
-    function withdraw() public onlyOwner {
+    function withdrawERC1155() public onlyOwner {
         uint256 balance = address(this).balance;
+        require(balance > 0, "No balance to withdraw");
         (bool success,) = payable(owner()).call{value: balance}("");
         require(success, "Transfer failed");
     }
