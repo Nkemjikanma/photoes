@@ -36,73 +36,107 @@ import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
  */
 
 contract PhotoFactory1155 is ERC1155, Ownable, ERC1155Supply, ERC2981 {
-    // Errors
-    error Photofactory1155__maxsupplyexceeded();
-    error PhotoFactory1155__InvalidAddress();
+  // Errors
+  error Photofactory1155__maxsupplyexceeded();
+  error PhotoFactory1155__InvalidAddress();
 
-    // state variables
-    uint256 public constant DEFAULT_EDITION_SIZE = 20;
-    uint96 public constant ROYALTY_FEE_NUMERATOR = 500; // 5%
+  // state variables
+  uint256 public constant DEFAULT_EDITION_SIZE = 20;
+  uint96 public constant ROYALTY_FEE_NUMERATOR = 500; // 5%
 
-    // Events
-    event MultipleTokenMinted(address indexed to, uint256 indexed id, uint256 amount);
+  // Events
+  event MultipleTokenMinted(
+    address indexed to,
+    uint256 indexed id,
+    uint256 amount
+  );
 
-    event BatchMinted(address indexed to, uint256[] ids, uint256[] amounts);
+  event BatchMinted(address indexed to, uint256[] ids, uint256[] amounts);
 
-    constructor(address initialOwner) ERC1155("") Ownable(initialOwner) {}
+  constructor(address initialOwner) ERC1155("") Ownable(initialOwner) {}
 
-    function setURI(string memory newuri) public onlyOwner {
-        _setURI(newuri);
+  function setURI(string memory newuri) public onlyOwner {
+    _setURI(newuri);
+  }
+
+  function mint(
+    address _account,
+    uint256 _tokenId,
+    uint256 _amount,
+    bytes memory _data
+  ) public onlyOwner {
+    if (_account == address(0)) revert PhotoFactory1155__InvalidAddress();
+    if (totalSupply(_tokenId) + _amount > DEFAULT_EDITION_SIZE) {
+      revert Photofactory1155__maxsupplyexceeded();
     }
 
-    function mint(address _account, uint256 _tokenId, uint256 _amount, bytes memory _data) public onlyOwner {
-        if (_account == address(0)) revert PhotoFactory1155__InvalidAddress();
-        if (totalSupply(_tokenId) + _amount > DEFAULT_EDITION_SIZE) {
-            revert Photofactory1155__maxsupplyexceeded();
-        }
+    _mint(_account, _tokenId, _amount, _data);
+    _setTokenRoyalty(_tokenId, owner(), ROYALTY_FEE_NUMERATOR);
 
-        _mint(_account, _tokenId, _amount, _data);
-        _setTokenRoyalty(_tokenId, owner(), ROYALTY_FEE_NUMERATOR);
+    emit MultipleTokenMinted(_account, _tokenId, _amount);
+  }
 
-        emit MultipleTokenMinted(_account, _tokenId, _amount);
+  function mintBatch(
+    address to,
+    uint256[] memory ids,
+    uint256[] memory amounts,
+    bytes memory data
+  ) public onlyOwner {
+    if (to == address(0)) revert PhotoFactory1155__InvalidAddress();
+    require(ids.length == amounts.length, "Length mismatch");
+    _mintBatch(to, ids, amounts, data);
+
+    for (uint256 i = 0; i < ids.length; i++) {
+      _setTokenRoyalty(ids[i], owner(), ROYALTY_FEE_NUMERATOR);
     }
 
-    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
-        public
-        onlyOwner
-    {
-        if (to == address(0)) revert PhotoFactory1155__InvalidAddress();
-        require(ids.length == amounts.length, "Length mismatch");
-        _mintBatch(to, ids, amounts, data);
+    emit BatchMinted(to, amounts, amounts);
+  }
 
-        for (uint256 i = 0; i < ids.length; i++) {
-            _setTokenRoyalty(ids[i], owner(), ROYALTY_FEE_NUMERATOR);
-        }
+  function getTokenSupply(uint256 id) public view returns (uint256) {
+    return totalSupply(id);
+  }
 
-        emit BatchMinted(to, amounts, amounts);
-    }
+  function withdrawERC1155() public onlyOwner {
+    uint256 balance = address(this).balance;
+    require(balance > 0, "No balance to withdraw");
+    (bool success, ) = payable(owner()).call{value: balance}("");
+    require(success, "Transfer failed");
+  }
 
-    function getTokenSupply(uint256 id) public view returns (uint256) {
-        return totalSupply(id);
-    }
+  function setTokenRoyalty(uint256 tokenId) internal {
+    _setTokenRoyalty(tokenId, owner(), ROYALTY_FEE_NUMERATOR);
+  }
 
-    function withdrawERC1155() public onlyOwner {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No balance to withdraw");
-        (bool success,) = payable(owner()).call{value: balance}("");
-        require(success, "Transfer failed");
-    }
+  function updateRoyaltyInfo(
+    uint256 tokenId,
+    address receiver,
+    uint96 feeNumerator
+  ) public onlyOwner {
+    _setTokenRoyalty(tokenId, receiver, feeNumerator);
+  }
 
-    // The following functions are overrides required by Solidity.
+  function getRoyaltyInfo(
+    uint256 tokenId,
+    uint256 salePrice
+  ) public view returns (address, uint256) {
+    return royaltyInfo(tokenId, salePrice);
+  }
 
-    function _update(address from, address to, uint256[] memory ids, uint256[] memory values)
-        internal
-        override(ERC1155, ERC1155Supply)
-    {
-        super._update(from, to, ids, values);
-    }
+  // The following functions are overrides required by Solidity.
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, ERC2981) returns (bool) {
-        return super.supportsInterface(interfaceId);
-    }
+  function _update(
+    address from,
+    address to,
+    uint256[] memory ids,
+    uint256[] memory values
+  ) internal override(ERC1155, ERC1155Supply) {
+    super._update(from, to, ids, values);
+  }
+
+  function supportsInterface(
+    bytes4 interfaceId
+  ) public view override(ERC1155, ERC2981) returns (bool) {
+    return super.supportsInterface(interfaceId);
+  }
 }
