@@ -25,66 +25,75 @@ pragma solidity ^0.8.27;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import {ERC721Royalty} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-contract PhotoFactory721 is ERC721, ERC721URIStorage, Ownable {
+/*
+ * @title PhotoFactory721
+ * @author Nkemjika
+ * @notice This contract handles ERC721 photo minting for Phtoes
+ * @dev Implements ERC721, ERC721URIStorage,
+ */
+
+contract PhotoFactory721 is ERC721, ERC721URIStorage, Ownable, ERC2981 {
     // Errors
+    error PhotoFactory721__InvalidURI(); //tokenURI is invalid
 
-    struct Photo {
-        string photoName;
-        uint256 editionSize;
-        string tokenURI;
-        string description;
-        bool minted;
-    }
+    // state variables
+    uint96 public constant ROYALTY_FEE_NUMERATOR = 500; // 5%
 
     // Events
-    event OneOfOnePhotoMinted(
-        address indexed onwer,
-        uint256 indexed tokenId,
-        string tokenURI
-    );
+    event OneOfOnePhotoMinted(uint256 indexed tokenId, string tokenURI);
 
-    constructor(
-        address initialOwner
-    ) ERC721("PhotoFactory", "PF") Ownable(initialOwner) {}
+    // Modifiers
 
-    function mintERC721(
-        string memory _tokenURI,
-        string memory _description,
-        string memory _photoName
-    ) public {
-        s_tokenIdToTokenURI[s_photoCounter] = _tokenURI;
+    constructor(address initialOwner) ERC721("PhotoFactory", "PF") Ownable(initialOwner) {
+        _setDefaultRoyalty(owner(), ROYALTY_FEE_NUMERATOR);
+    }
 
-        photoes[s_photoCounter] = Photo(
-            _photoName,
-            1,
-            _tokenURI,
-            _description,
-            true
-        );
-
-        minters.push(msg.sender);
-
-        _safeMint(msg.sender, s_photoCounter);
-        _setTokenURI(s_photoCounter, _tokenURI);
-        s_photoCounter++;
-
+    function mintERC721(string memory _tokenURI, uint256 _tokenId) public onlyOwner {
+        if (bytes(_tokenURI).length == 0) revert PhotoFactory721__InvalidURI();
+        _safeMint(msg.sender, _tokenId);
+        _setTokenURI(_tokenId, _tokenURI);
+        _setTokenRoyalty(_tokenId, owner(), ROYALTY_FEE_NUMERATOR);
         //emit
-        emit OneOfOnePhotoMinted(msg.sender, s_photoCounter, _tokenURI);
+        emit OneOfOnePhotoMinted(_tokenId, _tokenURI);
+    }
+
+    function withdrawERC721() public onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No balance to withdraw");
+        (bool success,) = payable(owner()).call{value: balance}("");
+        require(success, "Transfer failed");
+    }
+
+    function transferERC721(address from, address to, uint256 tokenId) public onlyOwner {
+        _transfer(from, to, tokenId);
+    }
+
+    function setTokenRoyalty(uint256 tokenId) internal {
+        _setTokenRoyalty(tokenId, owner(), ROYALTY_FEE_NUMERATOR);
+    }
+
+    function updateRoyaltyInfo(uint256 tokenId, address receiver, uint96 feeNumerator) public onlyOwner {
+        _setTokenRoyalty(tokenId, receiver, feeNumerator);
+    }
+
+    function getRoyaltyInfo(uint256 tokenId, uint256 salePrice) public view returns (address, uint256) {
+        return royaltyInfo(tokenId, salePrice);
     }
 
     // Added required override functions
-    function tokenURI(
-        uint256 tokenId
-    ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC721, ERC721URIStorage) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721URIStorage, ERC2981)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 }
