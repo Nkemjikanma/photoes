@@ -36,69 +36,64 @@ import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
  */
 
 contract PhotoFactory721 is ERC721, ERC721URIStorage, Ownable, ERC2981 {
-  // Errors
-  error PhotoFactory721__InvalidURI(); //tokenURI is invalid
+    // Errors
+    error PhotoFactory721__InvalidURI(); //tokenURI is invalid
 
-  // state variables
-  uint96 public constant ROYALTY_FEE_NUMERATOR = 500; // 5%
+    // state variables
+    uint96 public constant ROYALTY_FEE_NUMERATOR = 500; // 5%
 
-  // Events
-  event OneOfOnePhotoMinted(uint256 indexed tokenId, string tokenURI);
+    // Events
+    event OneOfOnePhotoMinted(uint256 indexed tokenId, string tokenURI);
 
-  // Modifiers
+    // Modifiers
 
-  constructor(
-    address initialOwner
-  ) ERC721("PhotoFactory", "PF") Ownable(initialOwner) {}
+    constructor(address initialOwner) ERC721("PhotoFactory", "PF") Ownable(initialOwner) {
+        _setDefaultRoyalty(owner(), ROYALTY_FEE_NUMERATOR);
+    }
 
-  function mintERC721(
-    string memory _tokenURI,
-    uint256 _tokenId
-  ) public onlyOwner {
-    if (bytes(_tokenURI).length == 0) revert PhotoFactory721__InvalidURI();
-    _safeMint(msg.sender, _tokenId);
-    _setTokenURI(_tokenId, _tokenURI);
-    _setTokenRoyalty(_tokenId, owner(), ROYALTY_FEE_NUMERATOR);
-    //emit
-    emit OneOfOnePhotoMinted(_tokenId, _tokenURI);
-  }
+    function mintERC721(string memory _tokenURI, uint256 _tokenId) public onlyOwner {
+        if (bytes(_tokenURI).length == 0) revert PhotoFactory721__InvalidURI();
+        _safeMint(msg.sender, _tokenId);
+        _setTokenURI(_tokenId, _tokenURI);
+        _setTokenRoyalty(_tokenId, owner(), ROYALTY_FEE_NUMERATOR);
+        //emit
+        emit OneOfOnePhotoMinted(_tokenId, _tokenURI);
+    }
 
-  function withdrawERC721() public onlyOwner {
-    uint256 balance = address(this).balance;
-    require(balance > 0, "No balance to withdraw");
-    (bool success, ) = payable(owner()).call{value: balance}("");
-    require(success, "Transfer failed");
-  }
+    function withdrawERC721() public onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No balance to withdraw");
+        (bool success,) = payable(owner()).call{value: balance}("");
+        require(success, "Transfer failed");
+    }
 
-  function setTokenRoyalty(uint256 tokenId) internal {
-    _setTokenRoyalty(tokenId, owner(), ROYALTY_FEE_NUMERATOR);
-  }
+    function transferERC721(address from, address to, uint256 tokenId) public onlyOwner {
+        _transfer(from, to, tokenId);
+    }
 
-  function updateRoyaltyInfo(
-    uint256 tokenId,
-    address receiver,
-    uint96 feeNumerator
-  ) public onlyOwner {
-    _setTokenRoyalty(tokenId, receiver, feeNumerator);
-  }
+    function setTokenRoyalty(uint256 tokenId) internal {
+        _setTokenRoyalty(tokenId, owner(), ROYALTY_FEE_NUMERATOR);
+    }
 
-  function getRoyaltyInfo(
-    uint256 tokenId,
-    uint256 salePrice
-  ) public view returns (address, uint256) {
-    return royaltyInfo(tokenId, salePrice);
-  }
+    function updateRoyaltyInfo(uint256 tokenId, address receiver, uint96 feeNumerator) public onlyOwner {
+        _setTokenRoyalty(tokenId, receiver, feeNumerator);
+    }
 
-  // Added required override functions
-  function tokenURI(
-    uint256 tokenId
-  ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-    return super.tokenURI(tokenId);
-  }
+    function getRoyaltyInfo(uint256 tokenId, uint256 salePrice) public view returns (address, uint256) {
+        return royaltyInfo(tokenId, salePrice);
+    }
 
-  function supportsInterface(
-    bytes4 interfaceId
-  ) public view override(ERC721, ERC721URIStorage, ERC2981) returns (bool) {
-    return super.supportsInterface(interfaceId);
-  }
+    // Added required override functions
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721URIStorage, ERC2981)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
 }
