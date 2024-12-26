@@ -29,6 +29,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 
 import {FunctionsClient} from "@chainlink/contracts/v0.8/functions/v1_0_0/FunctionsClient.sol";
 import {ConfirmedOwner} from "@chainlink/contracts/v0.8/shared/access/ConfirmedOwner.sol";
@@ -53,7 +54,7 @@ contract PhotoFactoryEngine is
   error PhotoFactoryEngine__EditionSizeMustBeGreaterThanZero();
   error PhotoFactoryEngine__PhotoAlreadyMinted();
   error PhotoFactoryEngine__InvalidTokenURI();
-
+  error PhotoFactoryEngine_InvalidAiVariantTokenId();
   error PhotoFactoryEngine__EditionCopiesExhausted();
   error PhotoFactoryEngine__InvalidAmount(); // invalid mint amount
   error PhotoFactoryEngine__MintFailed(); // minting failed error
@@ -160,6 +161,7 @@ contract PhotoFactoryEngine is
 
   struct AiGeneratedVariant {
     string aiURI;
+    uint256 originalImage;
     string description; // description of the photo for ai variant
     uint256 variantId;
     uint256 generationDate;
@@ -480,20 +482,30 @@ contract PhotoFactoryEngine is
 
     if (
       aiGenerationInProgress[_tokenId] ||
+      aiVariant.minted ||
       aiVariant.generationDate == 0 ||
       keccak256(abi.encodePacked(aiVariant.aiURI)) ==
       keccak256(abi.encodePacked(""))
     ) {
-      revert PhotoFactoryEngine__TokenAI();
+      revert PhotoFactoryEngine__TokenAIError();
     }
 
     aiVariant.variantId = aiVariant.variantId + 1; // increment the variant ID
 
-    // mint the AI variant
+    /*
+     * TODO:
+     * Receive svg in base 64,
+     * confirm it is in base 64 format
+     */
+
+       // Generate the token URI for the AI variant
+     string memory aiTokenURI = tokenURI(_tokenId);
+
     // Mint the AI variant as an ERC721
-    try factory721.mintERC721(aiVariant.aiURI, aiVariant.variantId) {
+    try factory721.mintERC721(aiTokenURI, aiVariant.variantId) {
       // Update mappings and state
       photoItem[_tokenId].aiVariantTokenId = aiVariant.variantId;
+      aiGeratedVariant[_tokenId].aiURI = aiTokenURI;
       aiVariant.minted = true;
       aiGeneratedVariant[_tokenId].description = aiVariant.description;
 
@@ -504,6 +516,48 @@ contract PhotoFactoryEngine is
 
     // update mappings
     tokenIdToAiVariants[_tokenId].push(aiVariant.variantId);
+  }
+
+  function tokenURI(
+    uint256 _aiVariantTokenId
+  ) public view override returns (string memory) {
+    AiGeneratedVariant memory aiVariant = aiGeneratedVariant[_aiVariantTokenId];
+
+    string memory imageURI = aiVariant.aiURI;
+    string memory name;
+
+    // sample description -  "description": "An NFT that reflects owners mood.", "attribures": [{"trait_type": "moodiness", "value":100}]
+    string memory description = aiVariant.description;
+
+
+    if (photoItem[aiVariant.originalImage] != 0) {
+      name = photoItem[aiVariant.originalImage].photoName;
+    } else {
+      name = multiplePhotoItem[aiVariant.originalImage].photoName;
+    }
+
+    if (keccak256(abi.encodePacked(name)) == keccak256(abi.encodePacked(""))) {
+      revert PhotoFactoryEngine_InvalidAiVariantTokenId();
+    }
+
+    string memory tokenMetadata = string(
+      abi.encodePacked(
+        _baseURI(),
+        Base64.encode(
+          bytes(
+            abi.encodePacked(
+              '{"name": "',
+              name,
+              '", "description": "', description, '", "image": "',
+              imageURI,
+              '"  }'
+            )
+          )
+        )
+      )
+    );
+
+    return tokenMetadata;
   }
 
   function updatePrice(
@@ -573,6 +627,7 @@ contract PhotoFactoryEngine is
     string memory aiURI = string(response);
     aiGeneratedVariant[tokenId] = AiGeneratedVariant({
       aiURI: aiURI,
+      originalImage: tokenId,
       description: "", // TODO: add description returned from ai getAiGenerationStatus
       variantId: s_aiVariantCounter,
       generationDate: block.timestamp,
@@ -603,6 +658,7 @@ contract PhotoFactoryEngine is
   {
     inProgress = aiGenerationInProgress[_tokenId];
     AiGeneratedVariant memory variant = aiGeneratedVariant[_tokenId];
+
     completed = bool(variant.generationDate != 0);
     aiUri = variant.aiURI;
     generationDate = variant.generationDate;
@@ -612,6 +668,10 @@ contract PhotoFactoryEngine is
   receive() external payable {}
 
   fallback() external payable {}
+
+  function _baseURI() internal pure override returns (string memory) {
+    return "data:application/json;base64";
+  }
 
   function _processPayment(uint256 amount) private {
     (bool success, ) = payable(owner()).call{value: amount}("");
@@ -668,7 +728,7 @@ contract PhotoFactoryEngine is
       interfaceId == type(IERC165).interfaceId;
   }
 
-  // TODO: Implement batch purchase
+  // TODO: Implement batch purchase - draft state
   function batchPurchase(
     uint256[] calldata tokenIds,
     uint256[] calldata quantities
