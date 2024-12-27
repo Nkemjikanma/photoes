@@ -69,6 +69,8 @@ contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner 
     PhotoFactory721 private factory721;
     PhotoFactory1155 private factory1155;
 
+    address public engine_owner;
+
     // state variables
     uint256 public constant VERSION = 1;
 
@@ -218,8 +220,9 @@ contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner 
         uint64 _subscriptionId,
         address _routerAddress,
         bytes32 _donId,
-        uint32 _gasLimit
-    ) FunctionsClient(_routerAddress) ConfirmedOwner(msg.sender) 
+        uint32 _gasLimit,
+        address _engineOwner
+    ) FunctionsClient(_routerAddress) ConfirmedOwner(_engineOwner) 
     // Ownable(initialOwner)
     {
         factory721 = PhotoFactory721(photoFactory721Address);
@@ -228,7 +231,7 @@ contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner 
         donId = _donId;
         gasLimit = _gasLimit;
         routerAddress = _routerAddress;
-
+        engine_owner = _engineOwner;
         s_photoCounter = 0;
         s_itemsSold = 0;
     }
