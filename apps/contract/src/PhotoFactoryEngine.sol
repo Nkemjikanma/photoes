@@ -83,8 +83,7 @@ contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner 
     bytes public s_lastResponse;
     bytes public s_lastError;
 
-    address router_base_testnet = 0xf9B8fc078197181C841c296C876945aaa425B278;
-    address router_base_mainnet = 0xf9B8fc078197181C841c296C876945aaa425B278;
+    address routerAddress;
     uint64 subscriptionId;
 
     // JavaScript source code
@@ -113,11 +112,9 @@ contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner 
     //     "return Functions.encodeString(apiResponse.data.ai_variant_uri);";
 
     //Callback gas limit
-    uint32 gasLimit = 300000;
+    uint32 gasLimit;
 
-    bytes32 donID_base_mainnet = 0x66756e2d626173652d6d61696e6e65742d310000000000000000000000000000;
-
-    bytes32 donID_base_testnet = 0x66756e2d626173652d7365706f6c69612d310000000000000000000000000000;
+    bytes32 donId;
 
     string public ai_generated_svg;
 
@@ -215,14 +212,22 @@ contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner 
     /**
      * @notice Initializes the contract with other smart contracts, Chainlink router address and sets the contract owner
      */
-    constructor(address photoFactory721Address, address photoFactory1155Address, uint64 _subscriptionId)
-        FunctionsClient(router_base_testnet)
-        ConfirmedOwner(msg.sender)
+    constructor(
+        address photoFactory721Address,
+        address photoFactory1155Address,
+        uint64 _subscriptionId,
+        address _routerAddress,
+        bytes32 _donId,
+        uint32 _gasLimit
+    ) FunctionsClient(_routerAddress) ConfirmedOwner(msg.sender) 
     // Ownable(initialOwner)
     {
         factory721 = PhotoFactory721(photoFactory721Address);
         factory1155 = PhotoFactory1155(photoFactory1155Address);
         subscriptionId = _subscriptionId;
+        donId = _donId;
+        gasLimit = _gasLimit;
+        routerAddress = _routerAddress;
 
         s_photoCounter = 0;
         s_itemsSold = 0;
@@ -403,7 +408,7 @@ contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner 
         if (args.length > 0) req.setArgs(args); // Set the arguments for the request
 
         // Send the request and store the request ID
-        s_lastRequestId = _sendRequest(req.encodeCBOR(), subscriptionId, gasLimit, donID_base_testnet);
+        s_lastRequestId = _sendRequest(req.encodeCBOR(), subscriptionId, gasLimit, donId);
 
         // Store the request ID to token ID mapping
         requestIdToTokenId[requestId] = _tokenId;
