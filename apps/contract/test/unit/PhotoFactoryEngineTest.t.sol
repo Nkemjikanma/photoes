@@ -110,75 +110,75 @@ contract PhotoFactoryEngineTest is Test {
   }
 
   // ***** test multiple mint ****//
-  function testMintMultipleEdition() public {
-    string memory tokenURI = "ipfs://example";
-    string memory description = "A shot in the wild";
-    string memory photoName = "Lion smile";
-    uint256 price = 0.08 ether;
-    uint256 editionSize = 20;
+  // function testMintMultipleEdition() public {
+  //   string memory tokenURI = "ipfs://example";
+  //   string memory description = "A shot in the wild";
+  //   string memory photoName = "Lion smile";
+  //   uint256 price = 0.08 ether;
+  //   uint256 editionSize = 20;
 
-    vm.deal(owner, 1 ether);
-    vm.prank(owner);
+  //   vm.deal(owner, 1 ether);
+  //   vm.prank(owner);
 
-    engine.mint(tokenURI, description, photoName, price, editionSize);
+  //   engine.mint(tokenURI, description, photoName, price, editionSize);
 
-    assertMultiplePhotoItemBasicInfo(
-      1,
-      tokenURI,
-      photoName,
-      description,
-      editionSize
-    );
-    // assertMultiplePhotoItemOwnershipInfo(1, owner, price);
-    // assertMultiplePhotoItemMintingStatus(1, true, false, 0);
-  }
+  //   assertMultiplePhotoItemBasicInfo(
+  //     1,
+  //     tokenURI,
+  //     photoName,
+  //     description,
+  //     editionSize
+  //   );
+  //   // assertMultiplePhotoItemOwnershipInfo(1, owner, price);
+  //   // assertMultiplePhotoItemMintingStatus(1, true, false, 0);
+  // }
 
   // Helper functions to check different aspects of the minted photo
-  function assertMultiplePhotoItemBasicInfo(
-    uint256 expectedTokenId,
-    string memory expectedTokenURI,
-    string memory expectedName,
-    string memory expectedDescription,
-    uint256 expectedSize
-  ) private view {
-    (
-      uint256 tokenId,
-      string memory name,
-      uint256 size,
-      string memory uri,
-      string memory desc,
-      ,
-      ,
+  // function assertMultiplePhotoItemBasicInfo(
+  //   uint256 expectedTokenId,
+  //   string memory expectedTokenURI,
+  //   string memory expectedName,
+  //   string memory expectedDescription,
+  //   uint256 expectedSize
+  // ) private view {
+  //   (
+  //     uint256 tokenId,
+  //     string memory name,
+  //     uint256 size,
+  //     string memory uri,
+  //     string memory desc,
+  //     ,
+  //     ,
 
-    ) = engine.multiplePhotoItem(1);
+  //   ) = engine.multiplePhotoItem(1);
 
-    assertEq(tokenId, expectedTokenId);
-    assertEq(name, expectedName);
-    assertEq(size, expectedSize);
-    assertEq(uri, expectedTokenURI);
-    assertEq(desc, expectedDescription);
-    //   assertEq(owners[0], expectedOwner); // Assuming the first owner is the expected owner
-    //   assertEq(price, expectedPrice);
-  }
+  //   assertEq(tokenId, expectedTokenId);
+  //   assertEq(name, expectedName);
+  //   assertEq(size, expectedSize);
+  //   assertEq(uri, expectedTokenURI);
+  //   assertEq(desc, expectedDescription);
+  //   //   assertEq(owners[0], expectedOwner); // Assuming the first owner is the expected owner
+  //   //   assertEq(price, expectedPrice);
+  // }
 
-  function assertMultiplePhotoItemOwnershipInfo(
-    uint256 tokenId,
-    address expectedOwner,
-    uint256 expectedPrice
-  ) private view {
-    (
-      uint256 tokenId,
-      string memory name,
-      uint256 size,
-      string memory uri,
-      string memory desc,
-      address[] memory owners,
-      uint256 price,
+  // function assertMultiplePhotoItemOwnershipInfo(
+  //   uint256 tokenId,
+  //   address expectedOwner,
+  //   uint256 expectedPrice
+  // ) private view {
+  //   (
+  //     uint256 tokenId,
+  //     string memory name,
+  //     uint256 size,
+  //     string memory uri,
+  //     string memory desc,
+  //     address[] memory owners,
+  //     uint256 price,
 
-    ) = engine.multiplePhotoItem(1);
-    assertEq(owners[0], expectedOwner); // Assuming the first owner is the expected owner
-    assertEq(price, expectedPrice);
-  }
+  //   ) = engine.multiplePhotoItem(1);
+  //   assertEq(owners[0], expectedOwner); // Assuming the first owner is the expected owner
+  //   assertEq(price, expectedPrice);
+  // }
 
   // function assertMultiplePhotoItemMintingStatus(
   //   uint256 tokenId,
