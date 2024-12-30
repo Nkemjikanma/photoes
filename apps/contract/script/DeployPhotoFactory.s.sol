@@ -9,7 +9,7 @@ import {PhotoFactory1155} from "../src/PhotoFactory1155.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 
 contract DeployPhotoFactory is Script {
-    address owner = msg.sender;
+    address owner = vm.envAddress("DEV_ADDRESS");
 
     function run() external returns (PhotoFactoryEngine, PhotoFactory721, PhotoFactory1155, HelperConfig) {
         HelperConfig helperConfig = new HelperConfig();
@@ -20,9 +20,11 @@ contract DeployPhotoFactory is Script {
 
         PhotoFactory721 factory721 = new PhotoFactory721(owner);
         PhotoFactory1155 factory1155 = new PhotoFactory1155(owner);
+
         PhotoFactoryEngine engine = new PhotoFactoryEngine(
             address(factory721), address(factory1155), subscriptionId, routerAddress, donId, callbackGasLimit, owner
         );
+
         factory721.transferOwnership(address(engine));
         factory1155.transferOwnership(address(engine));
 

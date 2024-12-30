@@ -29,6 +29,8 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 
 import {FunctionsClient} from "@chainlink/contracts/v0.8/functions/v1_0_0/FunctionsClient.sol";
@@ -43,7 +45,7 @@ import {FunctionsRequest} from "@chainlink/contracts/v0.8/functions/v1_0_0/libra
  * @notice further implementation should include reselling of photos
  * @dev Implements ERC1155, ERC1155SUPPLY, ConfirmedOwner, FunctionsClient, ReentrancyGuard
  */
-contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner {
+contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner, IERC721Receiver {
     using FunctionsRequest for FunctionsRequest.Request;
 
     // errors
@@ -65,6 +67,7 @@ contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner 
     error PhotoFactoryEngine__AIGenerationNotStarted();
     error PhotoFactoryEngine__TokenAI();
     error UnexpectedRequestID(bytes32 requestId);
+    error PhotoFactory721__TokenAlreadyExists();
 
     PhotoFactory721 private factory721;
     PhotoFactory1155 private factory1155;
@@ -249,6 +252,10 @@ contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner 
 
         uint256 tokenId = s_photoCounter + 1;
         s_photoCounter = tokenId;
+
+        if (_exists(tokenId)) {
+            revert PhotoFactory721__TokenAlreadyExists();
+        }
 
         if (_editionSize == 1) {
             photoItem[tokenId] = PhotoItem({
@@ -663,5 +670,13 @@ contract PhotoFactoryEngine is ReentrancyGuard, FunctionsClient, ConfirmedOwner 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             updatePrice(tokenIds[i], prices[i]);
         }
+    }
+
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data)
+        external
+        override
+        returns (bytes4)
+    {
+        return this.onERC721Received.selector;
     }
 }
