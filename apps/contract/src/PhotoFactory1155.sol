@@ -45,7 +45,7 @@ contract PhotoFactory1155 is ERC1155, Ownable, ERC1155Supply, ERC2981 {
     uint96 public constant ROYALTY_FEE_NUMERATOR = 500; // 5%
 
     // Events
-    event MultipleTokenMinted(address indexed to, uint256 indexed id, uint256 amount);
+    event MultipleTokenMinted(uint256 indexed id, uint256 amount);
 
     event BatchMinted(address indexed to, uint256[] ids, uint256[] amounts);
 
@@ -55,16 +55,16 @@ contract PhotoFactory1155 is ERC1155, Ownable, ERC1155Supply, ERC2981 {
         _setURI(newuri);
     }
 
-    function mint(address _account, uint256 _tokenId, uint256 _amount, bytes memory _data) public onlyOwner {
-        if (_account == address(0)) revert PhotoFactory1155__InvalidAddress();
+    function mint(address _to, uint256 _tokenId, uint256 _amount, bytes memory _data) public onlyOwner {
+        if (_to == address(0)) revert PhotoFactory1155__InvalidAddress();
         if (totalSupply(_tokenId) + _amount > DEFAULT_EDITION_SIZE) {
             revert Photofactory1155__maxsupplyexceeded();
         }
 
-        _mint(_account, _tokenId, _amount, _data);
+        _mint(_to, _tokenId, _amount, _data);
         _setTokenRoyalty(_tokenId, owner(), ROYALTY_FEE_NUMERATOR);
 
-        emit MultipleTokenMinted(_account, _tokenId, _amount);
+        emit MultipleTokenMinted(_tokenId, _amount);
     }
 
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)

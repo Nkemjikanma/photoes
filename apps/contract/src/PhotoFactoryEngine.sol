@@ -25,10 +25,12 @@ pragma solidity ^0.8.27;
 
 import {PhotoFactory721} from "./PhotoFactory721.sol";
 import {PhotoFactory1155} from "./PhotoFactory1155.sol";
+import {IPhotoFactoryEngine} from "./IPhotoFactoryEngine.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
@@ -49,7 +51,9 @@ contract PhotoFactoryEngine is
   ReentrancyGuard,
   FunctionsClient,
   ConfirmedOwner,
-  IERC721Receiver
+  IERC721Receiver,
+  IERC1155Receiver,
+  IPhotoFactoryEngine
 {
   using FunctionsRequest for FunctionsRequest.Request;
 
@@ -135,59 +139,11 @@ contract PhotoFactoryEngine is
 
   string public ai_generated_svg;
 
-  struct PhotoItem {
-    uint256 tokenId;
-    string photoName;
-    uint256 editionSize;
-    string tokenURI;
-    string description;
-    address owner; // address of the buyer
-    bool minted;
-    bool purchased;
-    uint256 price; // price of the item
-    uint256 aiVariantTokenId; // AI variant tokenId for this photo
-  }
-
-  struct MultiplePhotoItem {
-    uint256 tokenId;
-    string photoName;
-    uint256 editionSize;
-    string tokenURI;
-    string description;
-    address[] owners; // address of the buyers
-    uint256 price; // price of the item
-    bool minted;
-    uint256 totalPurchased; // Track total minted for this edition
-    uint256[] aiVariantTokenIds; // Array of all AI variant tokenIds for this photo
-  }
-
-  struct AiGeneratedVariant {
-    string aiURI;
-    uint256 originalImage;
-    string description; // description of the photo for ai variant
-    uint256 variantId;
-    uint256 generationDate;
-    bool minted;
-  }
-
-  struct UserAiVariant {
-    uint256 aiTokenId;
-    address owner;
-    uint256 originalPhotoTokenId;
-  }
-
-  // track ownership
-  struct EditionOwnership {
-    uint256 copiesOwned;
-    uint256[] aiVariantIds;
-    bool canMintAi;
-  }
-
   mapping(uint256 => mapping(address => EditionOwnership))
     public editionOwnership;
   // Track who owns how many copies of each edition - tokenid > address > editionOwnership
 
-  mapping(uint256 => PhotoItem) public photoItem;
+  mapping(uint256 => PhotoItem) private s_photoItem;
   mapping(uint256 => MultiplePhotoItem) public multiplePhotoItem;
   mapping(uint256 => AiGeneratedVariant) public aiGeneratedVariant;
   mapping(address => mapping(uint256 => uint256)) public userEditionCount; // user => tokenId => number of editions owned
@@ -231,7 +187,7 @@ contract PhotoFactoryEngine is
   event PriceUpdated(uint256 indexed tokenId, uint256 newPrice);
 
   modifier onlyPhotoOwner(uint256 _tokenId) {
-    if (msg.sender != photoItem[_tokenId].owner) {
+    if (msg.sender != s_photoItem[_tokenId].owner) {
       revert PhotoFactoryEngine__InvalidOwner();
     }
     _;
@@ -276,7 +232,7 @@ contract PhotoFactoryEngine is
     string memory _photoName,
     uint256 _price,
     uint256 _editionSize
-  ) public payable nonReentrant {
+  ) external nonReentrant {
     if (_editionSize < 1) {
       revert PhotoFactoryEngine__InvalidEditionSize();
     }
@@ -289,7 +245,7 @@ contract PhotoFactoryEngine is
     }
 
     if (_editionSize == 1) {
-      photoItem[tokenId] = PhotoItem({
+      s_photoItem[tokenId] = PhotoItem({
         tokenId: tokenId,
         photoName: _photoName,
         editionSize: 1,
@@ -303,7 +259,7 @@ contract PhotoFactoryEngine is
       });
 
       try factory721.mintERC721(_tokenURI, tokenId) {
-        photoItem[tokenId].minted = true;
+        s_photoItem[tokenId].minted = true;
         emit MintSuccessful(owner(), tokenId, _tokenURI, _price, true);
       } catch {
         revert PhotoFactoryEngine__MintFailed();
@@ -324,7 +280,7 @@ contract PhotoFactoryEngine is
 
       try
         factory1155.mint(
-          msg.sender,
+          address(this),
           tokenId,
           _editionSize,
           abi.encodePacked(_tokenURI)
@@ -347,7 +303,7 @@ contract PhotoFactoryEngine is
     if (_quantity == 0) revert PhotoFactoryEngine__InvalidAmount();
     if (msg.value == 0) revert PhotoFactoryEngine__InvalidAmount();
 
-    PhotoItem storage singlePhotoPurchase = photoItem[_tokenId];
+    PhotoItem storage singlePhotoPurchase = s_photoItem[_tokenId];
     MultiplePhotoItem storage multiplePhotoPurchase = multiplePhotoItem[
       _tokenId
     ];
@@ -390,7 +346,7 @@ contract PhotoFactoryEngine is
       revert PhotoFactoryEngine__InvalidPhotoTokenId();
     }
 
-    factory721.transferERC721(_photo.owner, msg.sender, _tokenId);
+    factory721.transferERC721(address(this), msg.sender, _tokenId);
 
     _photo.owner = msg.sender;
     _photo.purchased = true;
@@ -403,8 +359,8 @@ contract PhotoFactoryEngine is
 
     userEditionCount[msg.sender][_tokenId] = 1; // track how many editions
 
-    // Generate AI variant
-    generateAiVariant(_tokenId, _photo.tokenURI);
+    // // Generate AI variant
+    // generateAiVariant(_tokenId, _photo.tokenURI);
 
     s_itemsSold++;
   }
@@ -425,7 +381,13 @@ contract PhotoFactoryEngine is
       revert PhotoFactoryEngine__InvalidAmount();
     }
 
-    factory1155.transferERC1155(owner(), msg.sender, _tokenId, _quantity, "");
+    factory1155.transferERC1155(
+      address(this),
+      msg.sender,
+      _tokenId,
+      _quantity,
+      ""
+    );
 
     // update ownership
     EditionOwnership storage ownership = editionOwnership[_tokenId][msg.sender];
@@ -437,8 +399,8 @@ contract PhotoFactoryEngine is
     _photo.totalPurchased += _quantity;
     _photo.owners.push(msg.sender);
 
-    // Generate AI variant
-    generateAiVariant(_tokenId, _photo.tokenURI);
+    // // Generate AI variant
+    // generateAiVariant(_tokenId, _photo.tokenURI);
 
     s_itemsSold++;
   }
@@ -517,7 +479,7 @@ contract PhotoFactoryEngine is
     // Mint the AI variant as an ERC721
     try factory721.mintERC721(aiTokenURI, aiVariant.variantId) {
       // Update mappings and state
-      photoItem[_tokenId].aiVariantTokenId = aiVariant.variantId;
+      s_photoItem[_tokenId].aiVariantTokenId = aiVariant.variantId;
       aiGeneratedVariant[_tokenId].aiURI = aiTokenURI;
       aiVariant.minted = true;
       aiGeneratedVariant[_tokenId].description = aiVariant.description;
@@ -542,8 +504,8 @@ contract PhotoFactoryEngine is
     // sample description -  "description": "An NFT that reflects owners mood.", "attribures": [{"trait_type": "moodiness", "value":100}]
     string memory description = aiVariant.description;
 
-    if (photoItem[aiVariant.originalImage].minted) {
-      name = photoItem[aiVariant.originalImage].photoName;
+    if (s_photoItem[aiVariant.originalImage].minted) {
+      name = s_photoItem[aiVariant.originalImage].photoName;
     } else if (multiplePhotoItem[aiVariant.originalImage].minted) {
       name = multiplePhotoItem[aiVariant.originalImage].photoName;
     } else {
@@ -579,18 +541,18 @@ contract PhotoFactoryEngine is
     uint256 _tokenId,
     uint256 _newPrice
   ) public payable onlyPhotoOwner(_tokenId) onlyMinted(_tokenId) {
-    photoItem[_tokenId].price = _newPrice;
+    s_photoItem[_tokenId].price = _newPrice;
     emit PriceUpdated(_tokenId, _newPrice);
   }
 
   function getPrice(uint256 _tokenId) public view returns (uint256) {
-    return photoItem[_tokenId].price;
+    return s_photoItem[_tokenId].price;
   }
 
   function verifyMint(uint256 tokenId) public view returns (bool) {
     bool minted = false;
     if (
-      photoItem[tokenId].minted == true || multiplePhotoItem[tokenId].minted
+      s_photoItem[tokenId].minted == true || multiplePhotoItem[tokenId].minted
     ) {
       minted = true;
     }
@@ -703,7 +665,7 @@ contract PhotoFactoryEngine is
     bool exists = false;
 
     if (
-      photoItem[tokenId].minted == true || multiplePhotoItem[tokenId].minted
+      s_photoItem[tokenId].minted == true || multiplePhotoItem[tokenId].minted
     ) {
       exists = true;
     }
@@ -764,6 +726,20 @@ contract PhotoFactoryEngine is
     }
   }
 
+  function getMultiplePhotoItem(
+    uint256 _tokenId
+  ) public view returns (MultiplePhotoItem memory) {
+    MultiplePhotoItem memory photo = multiplePhotoItem[_tokenId];
+
+    return photo;
+  }
+
+  function getPhotoItem(
+    uint256 tokenId
+  ) public view returns (PhotoItem memory) {
+    return s_photoItem[tokenId];
+  }
+
   function onERC721Received(
     address operator,
     address from,
@@ -771,5 +747,25 @@ contract PhotoFactoryEngine is
     bytes calldata data
   ) external override returns (bytes4) {
     return this.onERC721Received.selector;
+  }
+
+  function onERC1155Received(
+    address,
+    address,
+    uint256,
+    uint256,
+    bytes memory
+  ) public virtual override returns (bytes4) {
+    return this.onERC1155Received.selector;
+  }
+
+  function onERC1155BatchReceived(
+    address,
+    address,
+    uint256[] memory,
+    uint256[] memory,
+    bytes memory
+  ) public virtual override returns (bytes4) {
+    return this.onERC1155BatchReceived.selector;
   }
 }
