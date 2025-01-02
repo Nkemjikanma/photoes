@@ -38,8 +38,10 @@ import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
 contract PhotoFactory721 is ERC721, ERC721URIStorage, Ownable, ERC2981 {
     // Errors
     error PhotoFactory721__InvalidURI(); //tokenURI is invalid
-
+    error PhotoFactory__LocalMintFailed();
+    error PhotoFactory721__InvalidOwner();
     // state variables
+
     uint96 public constant ROYALTY_FEE_NUMERATOR = 500; // 5%
 
     // Events
@@ -52,8 +54,15 @@ contract PhotoFactory721 is ERC721, ERC721URIStorage, Ownable, ERC2981 {
     }
 
     function mintERC721(string memory _tokenURI, uint256 _tokenId) public onlyOwner {
-        if (bytes(_tokenURI).length == 0) revert PhotoFactory721__InvalidURI();
-        _safeMint(msg.sender, _tokenId);
+        if (bytes(_tokenURI).length == 0 || keccak256(bytes(_tokenURI)) == keccak256(bytes(" "))) {
+            revert PhotoFactory721__InvalidURI();
+        }
+
+        if (owner() == address(0)) {
+            revert PhotoFactory721__InvalidOwner();
+        }
+
+        _safeMint(owner(), _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
         _setTokenRoyalty(_tokenId, owner(), ROYALTY_FEE_NUMERATOR);
         //emit
