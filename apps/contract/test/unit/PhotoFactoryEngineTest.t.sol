@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
+import {console2} from "forge-std/console2.sol";
 import {DeployPhotoFactory} from "../../script/DeployPhotoFactory.s.sol";
 import {PhotoFactory721} from "../../src/PhotoFactory721.sol";
 import {PhotoFactory1155} from "../../src/PhotoFactory1155.sol";
@@ -21,6 +22,7 @@ contract PhotoFactoryEngineTest is Test {
     deployer = new DeployPhotoFactory();
 
     (engine, factory721, factory1155, helperConfig) = deployer.run();
+    // var () = helperConfig.activeNetworkConfig();
   }
 
   function testDeployment() public view {
@@ -110,95 +112,38 @@ contract PhotoFactoryEngineTest is Test {
   }
 
   // ***** test multiple mint ****//
-  // function testMintMultipleEdition() public {
-  //   string memory tokenURI = "ipfs://example";
-  //   string memory description = "A shot in the wild";
-  //   string memory photoName = "Lion smile";
-  //   uint256 price = 0.08 ether;
-  //   uint256 editionSize = 20;
+  function testMintMultipleEdition() public {
+    string memory tokenURI = "ipfs://example";
+    string memory description = "A shot in the wild";
+    string memory photoName = "Lion smile";
+    uint256 price = 0.08 ether;
+    uint256 editionSize = 20;
 
-  //   vm.deal(owner, 1 ether);
-  //   vm.prank(owner);
+    vm.deal(owner, 1 ether);
+    vm.prank(owner);
 
-  //   engine.mint(tokenURI, description, photoName, price, editionSize);
+    engine.mint(tokenURI, description, photoName, price, editionSize);
 
-  //   assertMultiplePhotoItemBasicInfo(
-  //     1,
-  //     tokenURI,
-  //     photoName,
-  //     description,
-  //     editionSize
-  //   );
-  //   // assertMultiplePhotoItemOwnershipInfo(1, owner, price);
-  //   // assertMultiplePhotoItemMintingStatus(1, true, false, 0);
-  // }
+    // Get the full struct data
+    (
+      uint256 tokenId,
+      string memory name,
+      uint256 size,
+      string memory uri,
+      string memory desc,
+      uint256 mintPrice,
+      bool minted,
+      uint256 totalPurchased
+    ) = engine.multiplePhotoItem(1);
 
-  // Helper functions to check different aspects of the minted photo
-  // function assertMultiplePhotoItemBasicInfo(
-  //   uint256 expectedTokenId,
-  //   string memory expectedTokenURI,
-  //   string memory expectedName,
-  //   string memory expectedDescription,
-  //   uint256 expectedSize
-  // ) private view {
-  //   (
-  //     uint256 tokenId,
-  //     string memory name,
-  //     uint256 size,
-  //     string memory uri,
-  //     string memory desc,
-  //     ,
-  //     ,
-
-  //   ) = engine.multiplePhotoItem(1);
-
-  //   assertEq(tokenId, expectedTokenId);
-  //   assertEq(name, expectedName);
-  //   assertEq(size, expectedSize);
-  //   assertEq(uri, expectedTokenURI);
-  //   assertEq(desc, expectedDescription);
-  //   //   assertEq(owners[0], expectedOwner); // Assuming the first owner is the expected owner
-  //   //   assertEq(price, expectedPrice);
-  // }
-
-  // function assertMultiplePhotoItemOwnershipInfo(
-  //   uint256 tokenId,
-  //   address expectedOwner,
-  //   uint256 expectedPrice
-  // ) private view {
-  //   (
-  //     uint256 tokenId,
-  //     string memory name,
-  //     uint256 size,
-  //     string memory uri,
-  //     string memory desc,
-  //     address[] memory owners,
-  //     uint256 price,
-
-  //   ) = engine.multiplePhotoItem(1);
-  //   assertEq(owners[0], expectedOwner); // Assuming the first owner is the expected owner
-  //   assertEq(price, expectedPrice);
-  // }
-
-  // function assertMultiplePhotoItemMintingStatus(
-  //   uint256 tokenId,
-  //   bool expectedMinted,
-  //   bool expectedPurchased,
-  //   uint256 expectedAiVariantTokenId
-  // ) private view {
-  //   (
-  //     ,
-  //     ,
-  //     ,
-  //     ,
-  //     ,
-  //     ,
-  //     bool minted,
-  //     uint256 totalPurchased,
-  //     uint256[] memory aiVariantTokenIds
-  //   ) = engine.multiplePhotoItem(tokenId);
-  //   assertEq(minted, expectedMinted);
-  //   assertEq(totalPurchased, expectedPurchased);
-  //   assertEq(aiVariantTokenIds.length, expectedAiVariantTokenId);
-  // }
+    // Assert all fields
+    assertEq(tokenId, 1);
+    assertEq(name, photoName);
+    assertEq(size, editionSize);
+    assertEq(uri, tokenURI);
+    assertEq(desc, description);
+    assertEq(mintPrice, price);
+    assertEq(minted, true);
+    assertEq(totalPurchased, 0);
+  }
 }
