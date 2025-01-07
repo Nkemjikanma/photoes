@@ -201,7 +201,7 @@ contract PhotoFactoryEngine is
         bytes32 _donId,
         uint32 _gasLimit,
         address _engineOwner
-    ) FunctionsClient(_routerAddress) ConfirmedOwner(_engineOwner)
+    ) FunctionsClient(_routerAddress) ConfirmedOwner(_engineOwner) 
     // Ownable(initialOwner)
     {
         factory721 = PhotoFactory721(photoFactory721Address);
@@ -278,12 +278,9 @@ contract PhotoFactoryEngine is
         }
     }
 
-    function decidePhotoEdition(uint256 _tokenId) internal returns (bool, bool) {
-        PhotoItem storage singlePhotoPurchase = s_photoItem[_tokenId];
-        MultiplePhotoItems storage multiplePhotoPurchase = multiplePhotoItems[_tokenId];
-
-        bool isSingleEdition = singlePhotoPurchase.editionSize == 1;
-        bool isMultipleEdition = multiplePhotoPurchase.editionSize > 1;
+    function decidePhotoEdition(uint256 _tokenId) internal view returns (bool, bool) {
+        bool isSingleEdition = s_photoItem[_tokenId].editionSize == 1;
+        bool isMultipleEdition = multiplePhotoItems[_tokenId].editionSize > 1;
 
         return (isSingleEdition, isMultipleEdition);
     }
@@ -517,10 +514,7 @@ contract PhotoFactoryEngine is
     function withdrawFunds() public onlyOwner {
         uint256 balance = address(this).balance;
 
-        (bool success,) = payable(owner()).call{value: balance}("");
-        if (!success) {
-            revert PhotoFactoryEngine__TransactionFailed();
-        }
+        _processPayment(balance);
     }
 
     /**
@@ -608,25 +602,29 @@ contract PhotoFactoryEngine is
     function _exists(uint256 tokenId) private view returns (bool) {
         bool exists = false;
 
-        if (s_photoItem[tokenId].minted == true || multiplePhotoItems[tokenId].minted) {
+        if (s_photoItem[tokenId].minted == true || multiplePhotoItems[tokenId].minted == true) {
             exists = true;
         }
 
         return exists;
     }
 
-    function updatePrice(uint256 _tokenId, uint256 _newPrice)
-        public
-        payable
-        onlyPhotoOwner(_tokenId)
-        existingPhoto(_tokenId)
-    {
+    function updatePrice(uint256 _tokenId, uint256 _newPrice) public payable onlyOwner existingPhoto(_tokenId) {
+        // implement price update for multiple photos as well, - when no buyer**
         s_photoItem[_tokenId].price = _newPrice;
         emit PriceUpdated(_tokenId, _newPrice);
     }
 
     function getPrice(uint256 _tokenId) public view returns (uint256) {
-        return s_photoItem[_tokenId].price;
+        (bool isSingleEdition, bool isMultipleEdition) = decidePhotoEdition(_tokenId);
+
+        if (isSingleEdition) {
+            return s_photoItem[_tokenId].price;
+        }
+
+        if (isMultipleEdition) {
+            return multiplePhotoItems[_tokenId].price;
+        }
     }
 
     function verifyMint(uint256 tokenId) public view returns (bool) {
@@ -651,6 +649,7 @@ contract PhotoFactoryEngine is
         return s_photoCounter;
     }
 
+    // improve
     function getItemsSold() public view returns (uint256) {
         return s_itemsSold;
     }
