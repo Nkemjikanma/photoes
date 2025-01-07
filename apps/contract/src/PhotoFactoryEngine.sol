@@ -158,7 +158,7 @@ contract PhotoFactoryEngine is
     event RoyaltyUpdated(uint256 indexed tokenId, address receiver, uint96 feeNumerator);
 
     event AIGenerationRequested(uint256 indexed tokenId, bytes32 requestId);
-    event AIGenerationCompleted(uint256 indexed tokenId, string aiURI);
+    event AIGenerationCompleted(uint256 indexed tokenId, uint256 indexed aiVariantId, string aiURI);
     event AIGenerationFailed(uint256 indexed tokenId, bytes error);
     event AIVariantMinted(uint256 indexed originalTokenId, uint256 indexed aiTokenId);
 
@@ -184,7 +184,7 @@ contract PhotoFactoryEngine is
     modifier copiesOwnedToAiCheck(address _imageOwner, uint256 _tokenId) {
         EditionOwnership storage ownership = editionOwnership[_tokenId][_imageOwner];
 
-        if (ownership.aiVariantIds.length == ownership.copiesOwned) {
+        if (ownership.aiVariantIds.length >= ownership.copiesOwned) {
             revert PhotoFactoryEngine__ExceededAiVariantAllowed();
         }
         _;
@@ -391,6 +391,7 @@ contract PhotoFactoryEngine is
         external
         existingPhoto(_tokenId)
         onlyPhotoOwner(_tokenId)
+        copiesOwnedToAiCheck(msg.sender, _tokenId)
         returns (bytes32 requestId)
     {
         // Check if AI generation is already in progress
@@ -421,15 +422,14 @@ contract PhotoFactoryEngine is
         return s_lastRequestId;
     }
 
-    function mintAiVariant(uint256 _tokenId)
-        public
-        copiesOwnedToAiCheck(msg.sender, _tokenId)
-        onlyPhotoOwner(_tokenId)
-        existingPhoto(_tokenId)
+    function mintAiVariant(uint256 _tokenId, uint256 _aiVariantId, address _sender)
+        internal
+        // existingPhoto(_tokenId)
+        // onlyPhotoOwner(_tokenId)
         nonReentrant
     {
         // ensure AI generation is complete
-        AiGeneratedVariant memory aiVariant = aiGeneratedVariant[_tokenId]; // get the AI variant
+        AiGeneratedVariant memory aiVariant = aiGeneratedVariant[_aiVariantId]; // get the AI variant
 
         if (
             aiGenerationInProgress[_tokenId] || aiVariant.minted || aiVariant.generationDate == 0
@@ -438,8 +438,6 @@ contract PhotoFactoryEngine is
             revert PhotoFactoryEngine__TokenAIError();
         }
 
-        // aiVariant.variantId = aiVariant.variantId + 1; // increment the variant ID
-
         /*
      * TODO:
      * Receive svg in base 64,
@@ -447,7 +445,7 @@ contract PhotoFactoryEngine is
      */
 
         // Generate the token URI for the AI variant
-        string memory aiTokenURI = tokenURI(_tokenId);
+        string memory aiTokenURI = tokenURI(_aiVariantId, aiVariant);
 
         // Mint the AI variant as an ERC721
         try factory721.mintERC721(aiTokenURI, aiVariant.variantId) {
@@ -463,9 +461,9 @@ contract PhotoFactoryEngine is
                 multiplePhotoItems[_tokenId].aiVariantTokenIds.push(aiVariant.variantId);
             }
 
-            aiGeneratedVariant[_tokenId].aiURI = aiTokenURI;
+            aiVariant.aiURI = aiTokenURI;
             aiVariant.minted = true;
-            aiGeneratedVariant[_tokenId].description = aiVariant.description;
+            aiVariant.description = aiVariant.description;
             emit AIVariantMinted(_tokenId, aiVariant.variantId);
         } catch {
             revert PhotoFactoryEngine__MintFailed();
@@ -475,8 +473,12 @@ contract PhotoFactoryEngine is
         tokenIdToAiVariants[_tokenId].push(aiVariant.variantId);
     }
 
-    function tokenURI(uint256 _aiVariantTokenId) public view returns (string memory) {
-        AiGeneratedVariant memory aiVariant = aiGeneratedVariant[_aiVariantTokenId];
+    function tokenURI(uint256 _aiVariantTokenId, AiGeneratedVariant memory aiVariant)
+        public
+        view
+        returns (string memory)
+    {
+        // AiGeneratedVariant memory aiVariant = aiGeneratedVariant[_aiVariantTokenId];
 
         string memory imageURI = aiVariant.aiURI;
         string memory name;
@@ -549,7 +551,7 @@ contract PhotoFactoryEngine is
         // response body should hold svg data, metadata such as description etc and the token URI
         s_aiVariantCounter++;
         string memory aiURI = string(response);
-        aiGeneratedVariant[tokenId] = AiGeneratedVariant({
+        aiGeneratedVariant[s_aiVariantCounter] = AiGeneratedVariant({
             aiURI: aiURI,
             originalImage: tokenId,
             description: "", // TODO: add description returned from ai
@@ -559,14 +561,14 @@ contract PhotoFactoryEngine is
         });
 
         s_lastResponse = response;
-        ai_generated_svg = aiGeneratedVariant[tokenId].aiURI;
+        ai_generated_svg = aiGeneratedVariant[s_aiVariantCounter].aiURI;
         s_lastError = err;
 
         // Emit an event to log the response
-        emit AIGenerationCompleted(tokenId, ai_generated_svg);
+        emit AIGenerationCompleted(tokenId, s_aiVariantCounter, ai_generated_svg);
         emit Response(requestId, ai_generated_svg, s_lastResponse, s_lastError);
 
-        // mintAiVariant();
+        mintAiVariant(tokenId, s_aiVariantCounter, msg.sender);
     }
 
     // Add a function to check AI generation status
