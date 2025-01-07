@@ -584,7 +584,7 @@ contract PhotoFactoryEngine is
 
     fallback() external payable {}
 
-    function _baseURI() internal pure returns (string memory) {
+    function _baseURI() public pure returns (string memory) {
         return "data:application/json;base64";
     }
 
@@ -617,14 +617,17 @@ contract PhotoFactoryEngine is
 
     function getPrice(uint256 _tokenId) public view returns (uint256) {
         (bool isSingleEdition, bool isMultipleEdition) = decidePhotoEdition(_tokenId);
+        uint256 price;
 
         if (isSingleEdition) {
-            return s_photoItem[_tokenId].price;
+            price = s_photoItem[_tokenId].price;
         }
 
         if (isMultipleEdition) {
-            return multiplePhotoItems[_tokenId].price;
+            price = multiplePhotoItems[_tokenId].price;
         }
+
+        return price;
     }
 
     function verifyMint(uint256 tokenId) public view returns (bool) {
