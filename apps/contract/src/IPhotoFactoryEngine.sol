@@ -15,7 +15,7 @@ interface IPhotoFactoryEngine {
         uint256 aiVariantTokenId; // AI variant tokenId for this photo
     }
 
-    struct MultiplePhotoItem {
+    struct MultiplePhotoItems {
         uint256 tokenId;
         string photoName;
         uint256 editionSize;
@@ -61,7 +61,7 @@ interface IPhotoFactoryEngine {
 
     function purchase(uint256 tokenId, uint256 quantity) external payable;
 
-    function getMultiplePhotoItem(uint256 tokenId) external view returns (MultiplePhotoItem memory);
+    function getMultiplePhotoItems(uint256 tokenId) external view returns (MultiplePhotoItems memory);
 
     function getPhotoItem(uint256 tokenId) external view returns (PhotoItem memory);
 }

@@ -40,8 +40,8 @@ contract PhotoFactory721 is ERC721, ERC721URIStorage, Ownable, ERC2981 {
     error PhotoFactory721__InvalidURI(); //tokenURI is invalid
     error PhotoFactory__LocalMintFailed();
     error PhotoFactory721__InvalidOwner();
-    // state variables
 
+    // state variables
     uint96 public constant ROYALTY_FEE_NUMERATOR = 500; // 5%
 
     // Events

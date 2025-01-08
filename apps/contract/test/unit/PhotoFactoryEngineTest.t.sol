@@ -27,12 +27,14 @@ contract PhotoFactoryEngineTest is Test {
     // var () = helperConfig.activeNetworkConfig();
   }
 
+  /*Test Deployment*/
   function testDeployment() public view {
     assert(address(engine) != address(0));
     assert(address(factory721) != address(0));
     assert(address(factory1155) != address(0));
   }
 
+  /*Test single edition mint*/
   function testMintSingleEdition() public {
     string memory tokenURI = "ipfs://example";
     string memory description = "A shot in the wild";
@@ -93,6 +95,7 @@ contract PhotoFactoryEngineTest is Test {
     assertEq(photoItem.aiVariantTokenId, expectedAiVariantTokenId);
   }
 
+  /*Test purchase - single edition*/
   function testPurchaseSingleEdition() public {
     // First mint a single edition
     string memory tokenURI = "ipfs://example";
@@ -150,7 +153,7 @@ contract PhotoFactoryEngineTest is Test {
     assertEq(editionCount, 1, "User should own 1 edition");
   }
 
-  // ***** test multiple mint ****//
+  /* test multiple mint */
   function testMintMultipleEdition() public {
     string memory tokenURI = "ipfs://example";
     string memory description = "A shot in the wild";
@@ -174,8 +177,8 @@ contract PhotoFactoryEngineTest is Test {
     engine.mint(tokenURI, description, photoName, price, editionSize);
 
     // Get the full struct data
-    IPhotoFactoryEngine.MultiplePhotoItem memory photo = engine
-      .getMultiplePhotoItem(1);
+    IPhotoFactoryEngine.MultiplePhotoItems memory photo = engine
+      .getMultiplePhotoItems(1);
 
     // Assert all fields
     assertEq(photo.tokenId, 1);
@@ -188,6 +191,22 @@ contract PhotoFactoryEngineTest is Test {
     assertEq(photo.totalPurchased, 0);
   }
 
+  function testNoDuplicateTokenId() public {
+    // First mint
+    vm.prank(owner);
+    engine.mint("ipfs://example", "desc", "name", 0.08 ether, 1);
+
+    // Try to mint same token ID
+    vm.prank(owner);
+    engine.mint("ipfs://example", "desc", "name", 0.08 ether, 1);
+
+    IPhotoFactoryEngine.PhotoItem memory photoItem1 = engine.getPhotoItem(1);
+    IPhotoFactoryEngine.PhotoItem memory photoItem2 = engine.getPhotoItem(2);
+
+    assertFalse(photoItem1.tokenId == photoItem2.tokenId);
+  }
+
+  /*Test purchase - multiple edition*/
   function testPurchaseMultipleEdition() public {
     string memory tokenURI = "ipfs://example";
     string memory description = "A shot in the wild";
@@ -211,8 +230,8 @@ contract PhotoFactoryEngineTest is Test {
     engine.purchase{value: purchaseAmount}(tokenId, purchaseQuantity);
 
     // Get the full struct data after purchase
-    IPhotoFactoryEngine.MultiplePhotoItem memory photoItem = engine
-      .getMultiplePhotoItem(1);
+    IPhotoFactoryEngine.MultiplePhotoItems memory photoItem = engine
+      .getMultiplePhotoItems(1);
 
     // Assert basic information
     assertEq(photoItem.tokenId, tokenId, "Wrong token ID");
@@ -263,29 +282,154 @@ contract PhotoFactoryEngineTest is Test {
   }
 
   // Additional negative tests
-  // function testPurchaseMultipleEditionFailsWithInsufficientPayment() public {
-  //   // Setup
-  //   vm.deal(owner, 1 ether);
-  //   vm.prank(owner);
-  //   engine.mint("ipfs://example", "desc", "name", 0.08 ether, 20);
+  function testPurchaseMultipleEditionFailsWithInsufficientPayment() public {
+    // Setup
+    vm.deal(owner, 1 ether);
+    vm.prank(owner);
+    engine.mint("ipfs://example", "desc", "name", 0.08 ether, 20);
 
-  //   // Try to purchase with insufficient payment
-  //   vm.deal(buyer, 1 ether);
-  //   vm.prank(buyer);
-  //   vm.expectRevert(PhotoFactoryEngine__InvalidAmount.selector);
-  //   engine.purchase{value: 0.07 ether}(1, 1);
-  // }
+    // Try to purchase with insufficient payment
+    vm.deal(buyer, 1 ether);
+    vm.prank(buyer);
+    vm.expectRevert();
+    engine.purchase{value: 0.07 ether}(1, 1);
+  }
 
-  // function testPurchaseMultipleEditionFailsWithExcessiveQuantity() public {
-  //   // Setup
-  //   vm.deal(owner, 1 ether);
-  //   vm.prank(owner);
-  //   engine.mint("ipfs://example", "desc", "name", 0.08 ether, 20);
+  function testPurchaseMultipleEditionFailsWithExcessiveQuantity() public {
+    // Setup
+    vm.deal(owner, 1 ether);
+    vm.prank(owner);
+    engine.mint("ipfs://example", "desc", "name", 0.08 ether, 20);
 
-  //   // Try to purchase more than available
-  //   vm.deal(buyer, 10 ether);
-  //   vm.prank(buyer);
-  //   vm.expectRevert(PhotoFactoryEngine__InvalidAmount.selector);
-  //   engine.purchase{value: 2 ether}(1, 25);
-  // }
+    // Try to purchase more than available
+    vm.deal(buyer, 10 ether);
+    vm.prank(buyer);
+    // Expect the specific error with parameters
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        PhotoFactoryEngine.PhotoFactoryEngine__ExceededEditionSize.selector,
+        20, // editionSize
+        20 // remainingEditions
+      )
+    );
+    engine.purchase{value: 2 ether}(1, 25);
+  }
+
+  function testProcessPayment() public {
+    // Setup - mint and purchase to accumulate funds in the contract
+    vm.prank(owner);
+    engine.mint("ipfs://example", "desc", "name", 0.1 ether, 1);
+
+    // Record owner's initial balance
+    uint256 initialOwnerBalance = owner.balance;
+
+    // Make a purchase to add funds to contract
+    vm.deal(buyer, 1 ether);
+    vm.prank(buyer);
+    engine.purchase{value: 0.1 ether}(1, 1);
+
+    // Assert the payment was processed correctly
+    assertEq(owner.balance, initialOwnerBalance + 0.1 ether); // Owner should have received the payment
+    assertEq(address(engine).balance, 0); // Contract balance should be 0 as payment is forwarded
+  }
+
+  function testBaseURI() public {
+    string memory expectedURI = "data:application/json;base64";
+    string memory actualURI = engine._baseURI();
+
+    assertEq(
+      keccak256(abi.encodePacked(actualURI)),
+      keccak256(abi.encodePacked(expectedURI))
+    );
+  }
+
+  function testUpdateBuyerList() public {
+    vm.prank(owner);
+    engine.mint("ipfs://example", "desc", "name", 0.1 ether, 1);
+
+    vm.deal(buyer, 2 ether);
+    vm.prank(buyer);
+    engine.purchase{value: 0.1 ether}(1, 1);
+
+    // Get buyers list and verify
+    address[] memory buyersList = engine.getBuyers();
+    assertEq(buyersList.length, 1);
+    assertEq(buyersList[0], buyer);
+  }
+
+  function testGetPrice() public {
+    uint256 expectedPrice = 0.1 ether; // Use ether units
+
+    vm.prank(owner);
+    engine.mint("ipfs://example", "desc", "name", expectedPrice, 1);
+    uint256 actualPrice = engine.getPrice(1);
+
+    assertEq(actualPrice, expectedPrice);
+  }
+
+  function testPurchaseSingleEditionFailsWhenAlreadyPurchased() public {
+    // Setup
+    vm.prank(owner);
+    engine.mint("ipfs://example", "desc", "name", 0.1 ether, 1);
+
+    // First purchase
+    vm.deal(buyer, 1 ether);
+    vm.prank(buyer);
+    engine.purchase{value: 0.1 ether}(1, 1);
+
+    // Try second purchase
+    address secondBuyer = makeAddr("secondBuyer");
+    vm.deal(secondBuyer, 1 ether);
+    vm.prank(secondBuyer);
+    vm.expectRevert(
+      PhotoFactoryEngine.PhotoFactoryEngine__AlreadyBought.selector
+    );
+    engine.purchase{value: 0.1 ether}(1, 1);
+  }
+
+  function testPurchaseFailsWithInvalidTokenId() public {
+    vm.deal(buyer, 1 ether);
+    vm.prank(buyer);
+    vm.expectRevert(
+      PhotoFactoryEngine.PhotoFactoryEngine__InvalidPhotoTokenId.selector
+    );
+    engine.purchase{value: 0.1 ether}(1, 1);
+  }
+
+  function testReceiveFunction() public {
+    vm.deal(buyer, 1 ether);
+
+    vm.prank(buyer);
+    (bool success, ) = address(engine).call{value: 0.1 ether}("");
+
+    assertTrue(success);
+    assertEq(address(engine).balance, 0.1 ether);
+  }
+
+  function testUpdatePrice() public {
+    // Setup
+    vm.prank(owner);
+    engine.mint("ipfs://example", "desc", "name", 0.1 ether, 1);
+
+    // Update price as owner
+    vm.prank(owner);
+    engine.updatePrice(1, 0.2 ether);
+
+    // Verify price was updated
+    uint256 newPrice = engine.getPrice(1);
+    assertEq(newPrice, 0.2 ether);
+  }
+
+  function testUpdatePriceFailsWithNonOwner() public {
+    vm.prank(owner);
+    engine.mint("ipfs://example", "desc", "name", 0.1 ether, 1);
+
+    vm.prank(buyer);
+    vm.expectRevert("Only callable by owner"); // Use the specific error message from OpenZeppelin's Ownable
+    engine.updatePrice(1, 0.2 ether);
+
+    // Verify price was updated
+    uint256 newPrice = engine.getPrice(1);
+    assertEq(newPrice, 0.1 ether);
+  }
 }
