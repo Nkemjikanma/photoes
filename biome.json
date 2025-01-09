@@ -14,7 +14,14 @@
 		"indentStyle": "tab",
 		"indentWidth": 2,
 		"lineWidth": 100,
-		"ignore": ["node_modules/**", "dist/**"]
+		"ignore": [
+			"node_modules/**",
+			"dist/**",
+			"apps/contract/lib/**",
+			"apps/contract/out/**",
+			"apps/web/.next/**",
+			"apps/web/node_modules/**"
+		]
 	},
 	"organizeImports": {
 		"enabled": true
@@ -24,7 +31,14 @@
 		"rules": {
 			"recommended": true
 		},
-		"ignore": ["node_modules/**", "dist/**"]
+		"ignore": [
+			"node_modules/**",
+			"dist/**",
+			"apps/contract/lib/**",
+			"apps/contract/out/**",
+			"apps/web/.next/**",
+			"apps/web/node_modules/**"
+		]
 	},
 	"javascript": {
 		"formatter": {
