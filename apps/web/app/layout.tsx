@@ -2,15 +2,24 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 import { Web3Provider } from "@/providers/Web3Provider";
 
-const commitMono400 = localFont({
-	src: "../public/fonts/CommitMono-400-Regular.otf",
-	variable: "--commit-mono-400",
-});
-const commitMono700 = localFont({
-	src: "../public/fonts/CommitMono-700-Regular.otf",
-	variable: "--commit-mono-700",
+// Font definition
+const commitMono = localFont({
+	src: [
+		{
+			path: "../public/fonts/CommitMono-400-Regular.otf",
+			weight: "400",
+			style: "normal",
+		},
+		{
+			path: "../public/fonts/CommitMono-700-Regular.otf",
+			weight: "700",
+			style: "normal",
+		},
+	],
+	variable: "--font-commit-mono",
 });
 
 export const metadata: Metadata = {
@@ -24,9 +33,13 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en">
-			<body className={`${commitMono400.variable} ${commitMono700.variable} antialiased`}>
-				<Web3Provider>{children}</Web3Provider>
+		<html lang="en" suppressHydrationWarning>
+			<body
+				className={`${commitMono.variable} font-sans antialiased bg-grey text-zinc-800 dark:text-zinc-200 dark:bg-black`}
+			>
+				<ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+					<Web3Provider>{children}</Web3Provider>
+				</ThemeProvider>
 			</body>
 		</html>
 	);
