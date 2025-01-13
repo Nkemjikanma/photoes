@@ -13,14 +13,16 @@ export const PhotoFrame = ({
 		<svg
 			width={width}
 			height={height}
-			viewBox="0 0 128 128"
+			viewBox="20 10 85 85" // Adjusted viewBox to focus on the frame part
+			// or try viewBox="25 15 80 80"
+			preserveAspectRatio="xMidYMid meet" // Add this to maintain aspect ratio
 			id="Layer_1"
 			version="1.1"
 			xmlns="http://www.w3.org/2000/svg"
 			xmlnsXlink="http://www.w3.org/1999/xlink"
 			aria-label="Photo frame icon" // Add this
 			role="img" // Add this
-			className="[&_.st0]:fill-black [&_.st4]:fill-amber-600 [&_.st5]:fill-white dark:[&_.st0]:fill-zinc-300 dark:[&_.st4]:fill-zinc-500"
+			className="[&_.st0]:fill-black [&_.st4]:fill-amber-600 [&_.st5]:fill-white dark:[&_.st0]:fill-zinc-300 dark:[&_.st4]:fill-gray-200"
 			{...props}
 		>
 			<g>

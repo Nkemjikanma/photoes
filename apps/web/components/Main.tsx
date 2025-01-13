@@ -1,11 +1,15 @@
 import { Separator } from "@/components/ui/separator";
+import { LatestPhotoCarousel } from "./LatestPhotoCarousel";
 import { PhotoFrame } from "./assets/PhotoFrame";
 
 export const Main = () => {
 	return (
-		<div className="flex flex-col gap-1">
-			<PhotoFrame size="100px" />
-			<Separator />
+		<div className="flex flex-col justify-center items-center gap-2 h-5/6 w-full">
+			{/* <PhotoFrame size="60px" /> */}
+
+			<LatestPhotoCarousel />
+
+			{/*category grid */}
 		</div>
 	);
 };
