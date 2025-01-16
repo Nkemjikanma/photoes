@@ -6,10 +6,8 @@ export const Main = () => {
 	return (
 		<div className="flex flex-col justify-center items-center gap-2 h-5/6 w-full">
 			{/* <PhotoFrame size="60px" /> */}
-
 			<LatestPhotoCarousel />
-
-			{/*category grid */}
+			{/*category grid */}Press anytime to CMD-K search
 		</div>
 	);
 };
