@@ -59,7 +59,7 @@ interface IPhotoFactoryEngine {
         uint256 editionSize
     ) external;
 
-    function purchase(uint256 tokenId, uint256 quantity) external payable;
+    function purchase(uint256 tokenId, uint256 quantity, bool isUSDC) external payable;
 
     function getMultiplePhotoItems(uint256 tokenId) external view returns (MultiplePhotoItems memory);
 
