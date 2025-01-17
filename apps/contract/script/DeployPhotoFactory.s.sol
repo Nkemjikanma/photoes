@@ -7,32 +7,28 @@ import {PhotoFactoryEngine} from "../src/PhotoFactoryEngine.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 
 contract DeployPhotoFactory is Script {
-  address owner = vm.envAddress("DEV_ADDRESS");
+    address owner = vm.envAddress("DEV_ADDRESS");
 
-  function run() external returns (PhotoFactoryEngine, HelperConfig) {
-    HelperConfig helperConfig = new HelperConfig();
-    (
-      address routerAddress,
-      bytes32 donId,
-      uint64 subscriptionId,
-      uint32 callbackGasLimit,
-      uint256 deployerKey,
-      address priceFeed
-    ) = helperConfig.activeNetworkConfig();
+    function run() external returns (PhotoFactoryEngine, HelperConfig) {
+        HelperConfig helperConfig = new HelperConfig();
+        (
+            address routerAddress,
+            bytes32 donId,
+            uint64 subscriptionId,
+            uint32 callbackGasLimit,
+            uint256 deployerKey,
+            address priceFeed,
+            address usdcAddress
+        ) = helperConfig.activeNetworkConfig();
 
-    vm.startBroadcast(deployerKey);
+        vm.startBroadcast(deployerKey);
 
-    PhotoFactoryEngine engine = new PhotoFactoryEngine(
-      subscriptionId,
-      routerAddress,
-      donId,
-      callbackGasLimit,
-      owner,
-      priceFeed
-    );
+        PhotoFactoryEngine engine = new PhotoFactoryEngine(
+            subscriptionId, routerAddress, donId, callbackGasLimit, owner, priceFeed, usdcAddress
+        );
 
-    vm.stopBroadcast();
+        vm.stopBroadcast();
 
-    return (engine, helperConfig);
-  }
+        return (engine, helperConfig);
+    }
 }
