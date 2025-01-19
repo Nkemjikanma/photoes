@@ -49,7 +49,7 @@ contract PhotoFactory1155 is ERC1155, Ownable, ERC1155Supply, ERC2981 {
 
     event BatchMinted(address indexed to, uint256[] ids, uint256[] amounts);
 
-    constructor(string memory _nftName, address initialOwner) ERC1155(_nftName) Ownable(initialOwner) {}
+    constructor(address initialOwner) ERC1155("Photography journey - Nkemjika") Ownable(initialOwner) {}
 
     function setURI(string memory newuri) public onlyOwner {
         _setURI(newuri);

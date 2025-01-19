@@ -216,6 +216,8 @@ contract PhotoFactoryEngine is
      * @notice Initializes the contract with other smart contracts, Chainlink router address and sets the contract owner
      */
     constructor(
+        address _photoFactory721,
+        address _photoFactory1155,
         uint64 _subscriptionId,
         address _routerAddress,
         bytes32 _donId,
@@ -226,6 +228,8 @@ contract PhotoFactoryEngine is
     ) FunctionsClient(_routerAddress) ConfirmedOwner(_engineOwner) 
     // Ownable(initialOwner)
     {
+        factory721 = PhotoFactory721(_photoFactory721);
+        factory1155 = PhotoFactory1155(_photoFactory1155);
         subscriptionId = _subscriptionId;
         donId = _donId;
         gasLimit = _gasLimit;
@@ -244,7 +248,7 @@ contract PhotoFactoryEngine is
         string memory _photoName,
         uint256 _price,
         uint256 _editionSize
-    ) external nonReentrant {
+    ) external nonReentrant onlyOwner {
         if (_editionSize < 1) {
             revert PhotoFactoryEngine__InvalidEditionSize();
         }
@@ -270,10 +274,7 @@ contract PhotoFactoryEngine is
                 aiVariantTokenId: 0
             });
 
-            try new PhotoFactory721(_photoName, msg.sender) returns (PhotoFactory721 newFactory721) {
-                deployedPhotoFactoryContracts.push(address(newFactory721));
-                newFactory721.mintERC721(_tokenURI, tokenId);
-
+            try factory721.mintERC721(_tokenURI, tokenId) {
                 s_photoItem[tokenId].minted = true;
                 emit MintSuccessful(owner(), tokenId, _tokenURI, _price, true);
             } catch {
@@ -293,10 +294,7 @@ contract PhotoFactoryEngine is
                 aiVariantTokenIds: new uint256[](0)
             });
 
-            try new PhotoFactory1155(_photoName, msg.sender) returns (PhotoFactory1155 newFactory1155) {
-                deployedPhotoFactoryContracts.push(address(newFactory1155));
-                newFactory1155.mint(address(this), tokenId, _editionSize, abi.encodePacked(_tokenURI));
-
+            try factory1155.mint(address(this), tokenId, _editionSize, abi.encodePacked(_tokenURI)) {
                 multiplePhotoItems[tokenId].minted = true;
                 emit MintSuccessful(msg.sender, tokenId, _tokenURI, _price, false);
             } catch {
@@ -333,6 +331,8 @@ contract PhotoFactoryEngine is
             if (msg.value < totalCost) revert PhotoFactoryEngine__InvalidAmount();
             _processETHPayment(msg.value);
         }
+
+        _processPurchase(_tokenId, _quantity);
 
         emit PhotoPurchased(_tokenId, msg.sender, _quantity, totalCost);
     }
@@ -723,6 +723,20 @@ contract PhotoFactoryEngine is
 
         return minted;
     }
+
+    //TODO: Consider multiple deployments if other users can create projects.
+    // function getDeployedFactories() external view returns (address[] memory) {
+    //     return deployedPhotoFactoryContracts;
+    // }
+
+    // function isFactoryDeployed(address _factory) public view returns (bool) {
+    //     for (uint256 i = 0; i < deployedPhotoFactoryContracts.length; i++) {
+    //         if (deployedPhotoFactoryContracts[i] == _factory) {
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // }
 
     function getPhotoCounter() public view returns (uint256) {
         return s_photoCounter;
