@@ -49,7 +49,7 @@ contract PhotoFactory721 is ERC721, ERC721URIStorage, Ownable, ERC2981 {
 
     // Modifiers
 
-    constructor(string memory _nftName, address initialOwner) ERC721(_nftName, "") Ownable(initialOwner) {
+    constructor(address initialOwner) ERC721("Photography journey - Nkemjika", "") Ownable(initialOwner) {
         _setDefaultRoyalty(owner(), ROYALTY_FEE_NUMERATOR);
     }
 
