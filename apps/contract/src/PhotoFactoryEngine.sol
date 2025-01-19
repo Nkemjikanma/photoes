@@ -25,8 +25,7 @@ pragma solidity ^0.8.27;
 
 import {PhotoFactory721} from "./PhotoFactory721.sol";
 import {PhotoFactory1155} from "./PhotoFactory1155.sol";
-import {IPhotoFactoryEngine} from "./IPhotoFactoryEngine.sol";
-import {PriceConverter} from "./PriceConverter.sol";
+import {IPhotoFactoryEngine} from "./interfaces/IPhotoFactoryEngine.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -41,7 +40,8 @@ import {FunctionsClient} from "@chainlink/contracts/v0.8/functions/v1_0_0/Functi
 import {ConfirmedOwner} from "@chainlink/contracts/v0.8/shared/access/ConfirmedOwner.sol";
 import {FunctionsRequest} from "@chainlink/contracts/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
 import {AggregatorV2V3Interface} from "@chainlink/contracts/v0.8/shared/interfaces/AggregatorV2V3Interface.sol";
-import {PriceConverter} from "./PriceConverter.sol";
+import {PriceConverter} from "./libs/PriceConverter.sol";
+import {PurchaseHandler} from "./libs/PurchaseHandler.sol";
 
 /*
  * @title PhotoFactoryEngine
@@ -61,8 +61,9 @@ contract PhotoFactoryEngine is
 {
     // attaching the price converter lib
     using PriceConverter for uint256;
+    using PurchaseHandler for *;
 
-    // price fee for l2
+    // price feed for l2
     AggregatorV2V3Interface internal s_priceFeed;
 
     using FunctionsRequest for FunctionsRequest.Request;
@@ -99,7 +100,7 @@ contract PhotoFactoryEngine is
     PhotoFactory721 private factory721;
     PhotoFactory1155 private factory1155;
 
-    address[] public deployedPhotoFactoryContracts;
+    PurchaseHandler.PurchaseState private s_purchaseState;
 
     address public usdcAddress;
 
@@ -111,8 +112,6 @@ contract PhotoFactoryEngine is
     uint256 private s_photoCounter; // counter of photos, but used as tokenId
     uint256 private s_aiVariantCounter; // counter of AI variants minted
     uint256 private s_itemsSold; // counter of items sold
-
-    address[] public buyers;
 
     // Chainlink function variables to store the last request ID, response, and error
     bytes32 public s_lastRequestId;
@@ -154,15 +153,9 @@ contract PhotoFactoryEngine is
 
     string public ai_generated_svg;
 
-    mapping(uint256 => mapping(address => EditionOwnership)) public editionOwnership;
-    // Track who owns how many copies of each edition - tokenid > address > editionOwnership
-
-    mapping(uint256 => PhotoItem) private s_photoItem;
-    mapping(uint256 => MultiplePhotoItems) public multiplePhotoItems;
     mapping(uint256 => AiGeneratedVariant) public aiGeneratedVariant;
 
     // TODO: do i really need this? Single sourceo of truth is up.
-    mapping(address => mapping(uint256 => uint256)) public userEditionCount; // user => tokenId => number of editions owned
     mapping(uint256 => mapping(address => uint256[])) public userAiVariants; // tokenId => user => array of their AI variant tokenIds
     mapping(uint256 => uint256[]) private tokenIdToAiVariants; // original tokenId => array of AI variant tokenIds*** - convert to function to call tokenId to aiVariant in PhotoItem struct.
 
@@ -191,7 +184,7 @@ contract PhotoFactoryEngine is
 
     modifier onlyPhotoOwner(uint256 _tokenId) {
         // TODO: || msg.sender != multiplePhotoItems[_tokenId].owner
-        if (msg.sender != s_photoItem[_tokenId].owner) {
+        if (msg.sender != s_purchaseState.photoItem[_tokenId].owner) {
             revert PhotoFactoryEngine__InvalidOwner();
         }
         _;
@@ -204,7 +197,7 @@ contract PhotoFactoryEngine is
     }
 
     modifier copiesOwnedToAiCheck(address _imageOwner, uint256 _tokenId) {
-        EditionOwnership storage ownership = editionOwnership[_tokenId][_imageOwner];
+        IPhotoFactoryEngine.EditionOwnership storage ownership = s_purchaseState.editionOwnership[_tokenId][_imageOwner];
 
         if (ownership.aiVariantIds.length >= ownership.copiesOwned) {
             revert PhotoFactoryEngine__ExceededAiVariantAllowed();
@@ -236,9 +229,9 @@ contract PhotoFactoryEngine is
         routerAddress = _routerAddress;
         engine_owner = _engineOwner;
         s_photoCounter = 0;
-        s_itemsSold = 0;
+        s_purchaseState.itemsSold = 0;
         s_priceFeed = AggregatorV2V3Interface(_priceFeed);
-        usdcAddress = _usdcAddress;
+        s_purchaseState.usdcAddress = _usdcAddress;
     }
 
     //TODO: when mint fails, does variable changed in the function call restore to previoius state
@@ -261,7 +254,7 @@ contract PhotoFactoryEngine is
         }
 
         if (_editionSize == 1) {
-            s_photoItem[tokenId] = PhotoItem({
+            s_purchaseState.photoItem[tokenId] = IPhotoFactoryEngine.PhotoItem({
                 tokenId: tokenId,
                 photoName: _photoName,
                 editionSize: 1,
@@ -275,13 +268,13 @@ contract PhotoFactoryEngine is
             });
 
             try factory721.mintERC721(_tokenURI, tokenId) {
-                s_photoItem[tokenId].minted = true;
+                s_purchaseState.photoItem[tokenId].minted = true;
                 emit MintSuccessful(owner(), tokenId, _tokenURI, _price, true);
             } catch {
                 revert PhotoFactoryEngine__MintFailed();
             }
         } else {
-            multiplePhotoItems[tokenId] = MultiplePhotoItems({
+            s_purchaseState.multiplePhotoItems[tokenId] = IPhotoFactoryEngine.MultiplePhotoItems({
                 tokenId: tokenId,
                 photoName: _photoName,
                 editionSize: _editionSize,
@@ -295,19 +288,12 @@ contract PhotoFactoryEngine is
             });
 
             try factory1155.mint(address(this), tokenId, _editionSize, abi.encodePacked(_tokenURI)) {
-                multiplePhotoItems[tokenId].minted = true;
+                s_purchaseState.multiplePhotoItems[tokenId].minted = true;
                 emit MintSuccessful(msg.sender, tokenId, _tokenURI, _price, false);
             } catch {
                 revert PhotoFactoryEngine__MintFailed();
             }
         }
-    }
-
-    function decidePhotoEdition(uint256 _tokenId) internal view returns (bool, bool) {
-        bool isSingleEdition = s_photoItem[_tokenId].editionSize == 1;
-        bool isMultipleEdition = multiplePhotoItems[_tokenId].editionSize > 1;
-
-        return (isSingleEdition, isMultipleEdition);
     }
 
     function purchase(uint256 _tokenId, uint256 _quantity, bool isUSDC)
@@ -325,14 +311,16 @@ contract PhotoFactoryEngine is
         uint256 totalCost = price * _quantity;
 
         if (isUSDC) {
-            _handleUSDCPayment(msg.sender, totalCost);
+            PurchaseHandler.handleUSDCPayment(s_purchaseState, msg.sender, totalCost);
         } else {
             // Transfer funds to the owner
             if (msg.value < totalCost) revert PhotoFactoryEngine__InvalidAmount();
-            _processETHPayment(msg.value);
+            PurchaseHandler.handleETHPayment(msg.value, totalCost, payable(owner()));
         }
 
-        _processPurchase(_tokenId, _quantity);
+        PurchaseHandler.processPurchase(
+            s_purchaseState, factory721, factory1155, _tokenId, _quantity, msg.value, msg.sender
+        );
 
         emit PhotoPurchased(_tokenId, msg.sender, _quantity, totalCost);
     }
@@ -407,14 +395,15 @@ contract PhotoFactoryEngine is
         try factory721.mintERC721(aiTokenURI, aiVariant.variantId) {
             // Update mappings and state
 
-            (bool isSingleEdition, bool isMultipleEdition) = decidePhotoEdition(_tokenId);
+            (bool isSingleEdition, bool isMultipleEdition) =
+                PurchaseHandler.decidePhotoEdition(s_purchaseState, _tokenId);
 
             if (isSingleEdition) {
-                s_photoItem[_tokenId].aiVariantTokenId = aiVariant.variantId;
+                s_purchaseState.photoItem[_tokenId].aiVariantTokenId = aiVariant.variantId;
             }
 
             if (isMultipleEdition) {
-                multiplePhotoItems[_tokenId].aiVariantTokenIds.push(aiVariant.variantId);
+                s_purchaseState.multiplePhotoItems[_tokenId].aiVariantTokenIds.push(aiVariant.variantId);
             }
 
             aiVariant.aiURI = aiTokenURI;
@@ -442,10 +431,10 @@ contract PhotoFactoryEngine is
         // sample description -  "description": "An NFT that reflects owners mood.", "attribures": [{"trait_type": "moodiness", "value":100}]
         string memory description = aiVariant.description;
 
-        if (s_photoItem[aiVariant.originalImage].minted) {
-            name = s_photoItem[aiVariant.originalImage].photoName;
-        } else if (multiplePhotoItems[aiVariant.originalImage].minted) {
-            name = multiplePhotoItems[aiVariant.originalImage].photoName;
+        if (s_purchaseState.photoItem[aiVariant.originalImage].minted) {
+            name = s_purchaseState.photoItem[aiVariant.originalImage].photoName;
+        } else if (s_purchaseState.multiplePhotoItems[aiVariant.originalImage].minted) {
+            name = s_purchaseState.multiplePhotoItems[aiVariant.originalImage].photoName;
         } else {
             revert PhotoFactoryEngine__InvalidPhotoTokenId();
         }
@@ -573,117 +562,28 @@ contract PhotoFactoryEngine is
         if (!success) revert PhotoFactoryEngine__TransactionFailed();
     }
 
-    function _handleUSDCPayment(address _buyer, uint256 _amount) private {
-        IERC20 usdc = IERC20(usdcAddress);
-
-        if (usdc.balanceOf(_buyer) < _amount) {
-            revert PhotoFactoryEngine__AmountTooLow();
-        }
-
-        bool success = usdc.transferFrom(_buyer, address(this), _amount);
-        if (!success) revert PhotoFactoryEngine__TransactionFailed();
-    }
-
-    function _handleETHPayment(uint256 _sent, uint256 _totalCost) private {
-        if (_sent < _totalCost) revert PhotoFactoryEngine__AmountTooLow();
-        _processETHPayment(_sent);
-    }
-
     function _updateBuyersList(address buyer) private {
         if (!_isNewBuyer(buyer)) {
-            buyers.push(buyer);
+            s_purchaseState.buyers.push(buyer);
         }
     }
 
     function _exists(uint256 tokenId) private view returns (bool) {
         bool exists = false;
 
-        if (s_photoItem[tokenId].minted == true || multiplePhotoItems[tokenId].minted == true) {
+        if (
+            s_purchaseState.photoItem[tokenId].minted == true
+                || s_purchaseState.multiplePhotoItems[tokenId].minted == true
+        ) {
             exists = true;
         }
 
         return exists;
     }
 
-    function _processPurchase(uint256 _tokenId, uint256 _quantity) private {
-        (bool isSingleEdition, bool isMultipleEdition) = decidePhotoEdition(_tokenId);
-
-        if (isSingleEdition) {
-            _purchaseSingleEdition(msg.value, _tokenId);
-        } else if (isMultipleEdition) {
-            _purchaseMultipleEdition(multiplePhotoItems[_tokenId], _quantity, msg.value, _tokenId);
-        }
-
-        _updateBuyersList(msg.sender);
-        unchecked {
-            s_itemsSold++;
-        }
-    }
-
-    function _purchaseSingleEdition(uint256 _payment, uint256 _tokenId) private {
-        // Checks-Effects-Interactions
-        PhotoItem storage photo = s_photoItem[_tokenId];
-
-        // checks
-        if (photo.purchased || photo.owner == msg.sender) {
-            revert PhotoFactoryEngine__AlreadyBought();
-        }
-
-        // effects - change states
-        photo.owner = msg.sender;
-        photo.purchased = true;
-
-        editionOwnership[_tokenId][msg.sender] =
-            EditionOwnership({copiesOwned: 1, aiVariantIds: new uint256[](0), canMintAi: true});
-
-        userEditionCount[msg.sender][_tokenId] = 1;
-
-        // // Generate AI variant
-        // generateAiVariant(_tokenId, _photo.tokenURI);
-
-        // interactions - external call
-        factory721.transferERC721(address(this), msg.sender, _tokenId);
-    }
-
-    function _purchaseMultipleEdition(
-        MultiplePhotoItems storage _photo,
-        uint256 _quantity,
-        uint256 _payment,
-        uint256 _tokenId
-    ) private {
-        uint256 remainingEditions = _photo.editionSize - _photo.totalPurchased;
-
-        // checks
-        if (_quantity == 0 || _quantity > remainingEditions) {
-            revert PhotoFactoryEngine__ExceededEditionSize(_photo.editionSize, remainingEditions);
-        }
-        //effects - update ownership
-        EditionOwnership storage ownership = editionOwnership[_tokenId][msg.sender];
-        ownership.copiesOwned += _quantity;
-        ownership.canMintAi = true;
-        if (ownership.aiVariantIds.length == 0) {
-            ownership.aiVariantIds = new uint256[](0);
-        }
-
-        // TODO: // create a modifier/function to check the number of ai variants that users with multiple editions can generate
-
-        userEditionCount[msg.sender][_tokenId] += _quantity; // track how many editions
-
-        _photo.totalPurchased += _quantity;
-        _photo.owners.push(msg.sender);
-
-        // // Generate AI variant
-        // generateAiVariant(_tokenId, _photo.tokenURI);
-
-        s_itemsSold++;
-
-        //interactions
-        factory1155.transferERC1155(address(this), msg.sender, _tokenId, _quantity, "");
-    }
-
     function _isNewBuyer(address _address) private view returns (bool) {
-        for (uint256 i = 0; i < buyers.length; i++) {
-            if (buyers[i] == _address) {
+        for (uint256 i = 0; i < s_purchaseState.buyers.length; i++) {
+            if (s_purchaseState.buyers[i] == _address) {
                 return true;
             }
         }
@@ -692,20 +592,20 @@ contract PhotoFactoryEngine is
 
     function updatePrice(uint256 _tokenId, uint256 _newPrice) public payable onlyOwner existingPhoto(_tokenId) {
         // implement price update for multiple photos as well, - when no buyer**
-        s_photoItem[_tokenId].price = _newPrice;
+        s_purchaseState.photoItem[_tokenId].price = _newPrice;
         emit PriceUpdated(_tokenId, _newPrice);
     }
 
     function getPrice(uint256 _tokenId) public view returns (uint256) {
-        (bool isSingleEdition, bool isMultipleEdition) = decidePhotoEdition(_tokenId);
+        (bool isSingleEdition, bool isMultipleEdition) = PurchaseHandler.decidePhotoEdition(s_purchaseState, _tokenId);
         uint256 price;
 
         if (isSingleEdition) {
-            price = s_photoItem[_tokenId].price;
+            price = s_purchaseState.photoItem[_tokenId].price;
         }
 
         if (isMultipleEdition) {
-            price = multiplePhotoItems[_tokenId].price;
+            price = s_purchaseState.multiplePhotoItems[_tokenId].price;
         }
 
         if (price == 0) {
@@ -717,7 +617,7 @@ contract PhotoFactoryEngine is
 
     function verifyMint(uint256 tokenId) public view returns (bool) {
         bool minted = false;
-        if (s_photoItem[tokenId].minted == true || multiplePhotoItems[tokenId].minted) {
+        if (s_purchaseState.photoItem[tokenId].minted == true || s_purchaseState.multiplePhotoItems[tokenId].minted) {
             minted = true;
         }
 
@@ -748,7 +648,20 @@ contract PhotoFactoryEngine is
     }
 
     function getBuyers() public view returns (address[] memory) {
-        return buyers;
+        return s_purchaseState.buyers;
+    }
+
+    function getEditionOwnership(uint256 _tokenId, address _owner)
+        public
+        view
+        returns (uint256 copiesOwned, bool canMintAi)
+    {
+        IPhotoFactoryEngine.EditionOwnership storage ownership = s_purchaseState.editionOwnership[_tokenId][_owner];
+        return (ownership.copiesOwned, ownership.canMintAi);
+    }
+
+    function getUserEditionCount(address _user, uint256 _tokenId) public view returns (uint256) {
+        return s_purchaseState.userEditionCount[_user][_tokenId];
     }
 
     function getVersion() public pure returns (uint256) {
@@ -775,14 +688,18 @@ contract PhotoFactoryEngine is
         }
     }
 
-    function getMultiplePhotoItems(uint256 _tokenId) public view returns (MultiplePhotoItems memory) {
-        MultiplePhotoItems memory photo = multiplePhotoItems[_tokenId];
+    function getMultiplePhotoItems(uint256 _tokenId)
+        public
+        view
+        returns (IPhotoFactoryEngine.MultiplePhotoItems memory)
+    {
+        IPhotoFactoryEngine.MultiplePhotoItems memory photo = s_purchaseState.multiplePhotoItems[_tokenId];
 
         return photo;
     }
 
-    function getPhotoItem(uint256 tokenId) public view returns (PhotoItem memory) {
-        return s_photoItem[tokenId];
+    function getPhotoItem(uint256 tokenId) public view returns (IPhotoFactoryEngine.PhotoItem memory) {
+        return s_purchaseState.photoItem[tokenId];
     }
 
     function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data)
