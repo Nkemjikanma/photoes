@@ -2,30 +2,63 @@
 pragma solidity ^0.8.26;
 
 interface IPhotoFactoryEngine {
-  struct PhotoItem {
-    uint256 tokenId;
-    string photoName;
-    uint256 editionSize;
-    string tokenURI;
-    string description;
-    address owner; // address of the buyer
-    bool minted;
-    bool purchased;
-    uint256 price; // price of the item
-    uint256 aiVariantTokenId; // AI variant tokenId for this photo
+  enum EditionType {
+    Single, // ERC721
+    Multiple // ERC1155
   }
 
-  struct MultiplePhotoItems {
-    uint256 tokenId;
-    string photoName;
-    uint256 editionSize;
-    string tokenURI;
+  enum CollectionCategory {
+    Photography,
+    Art,
+    Nature,
+    Portrait,
+    Abstract,
+    Other
+  }
+
+  struct CollectionMetadata {
+    string coverImageURI;
+    string featuredPhotoURI;
+    string[] tags;
+    mapping(string => string) customAttributes;
+  }
+
+  struct Collection {
+    uint256 collectionId;
+    string name;
     string description;
-    address[] owners; // address of the buyers
-    uint256 price; // price of the item
-    bool minted;
-    uint256 totalPurchased; // Track total minted for this edition
-    uint256[] aiVariantTokenIds; // Array of all AI variant tokenIds for this photo
+    address creator;
+    uint256 createdAt;
+    uint256 basePrice;
+    CollectionCategory category;
+    CollectionMetadata metadata;
+    uint256[] photoIds; // All photoids in this collection
+    mapping(uint256 => Photo) photos; // Track all photos in this collection
+  }
+
+  struct Photo {
+    uint256 tokenId;
+    string name;
+    string description;
+    string tokenURI;
+    EditionType editionType;
+    uint256 editionSize;
+    uint256 price;
+    uint256 totalMinted;
+    bool isActive;
+    address creator;
+    uint256 createdAt;
+    uint256 collectionId; // 0 if not part of collection
+    uint256[] aiVariantIds; // AI variants generated for this photo
+  }
+
+  // Track ownership of photos
+  struct PhotoOwnership {
+    uint256 photoId;
+    address owner;
+    uint256 quantity; // 1 for Single, can be more for Multiple
+    uint256[] aiVariantIds; // AI variants owned by this owner
+    uint256 purchaseDate;
   }
 
   struct AiGeneratedVariant {
@@ -65,10 +98,6 @@ interface IPhotoFactoryEngine {
     bool isUSDC
   ) external payable;
 
-  function getMultiplePhotoItems(
-    uint256 tokenId
-  ) external view returns (MultiplePhotoItems memory);
-
   function getEditionOwnership(
     uint256 _tokenId,
     address _owner
@@ -79,7 +108,5 @@ interface IPhotoFactoryEngine {
     uint256 _tokenId
   ) external view returns (uint256);
 
-  function getPhotoItem(
-    uint256 tokenId
-  ) external view returns (PhotoItem memory);
+  function getPhotoItem(uint256 tokenId) external view returns (Photo memory);
 }
