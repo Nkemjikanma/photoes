@@ -9,6 +9,7 @@ export const PhotoFrame = ({
 	height = size || "24px",
 	...props
 }: PhotoFrameProps) => {
+	console.log(width, height);
 	return (
 		<svg
 			width={width}

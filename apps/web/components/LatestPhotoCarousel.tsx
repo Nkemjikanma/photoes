@@ -1,44 +1,60 @@
-import { Button } from "@/components/ui/button";
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
 import {
 	Carousel,
 	type CarouselApi,
 	CarouselContent,
 	CarouselItem,
-	CarouselNext,
-	CarouselPrevious,
 } from "@/components/ui/carousel";
-// import { useCarousel } from "@/components/ui/carousel"; // You'll need to export this
-import { Loader2 } from "lucide-react";
+import { Loader2, MoveRight } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface LatestPhotoCarouselProps {
 	intervalTime?: number; // Time in milliseconds
 	autoplayEnabled?: boolean;
-	photos?: Array<{ id: string; url: string; title: string }>;
 }
+
+const cameras = [
+	{
+		name: "Nikon EF92",
+		image:
+			"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot%202025-01-30%20at%2018.51.56-JOFpNzrMHXOl6XZvrkvfIFan9gfqvp.png",
+		alt: "Nikon EF92 film camera",
+	},
+	{
+		name: "Samsung Fino",
+		image:
+			"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot%202025-01-30%20at%2018.51.56-JOFpNzrMHXOl6XZvrkvfIFan9gfqvp.png",
+		alt: "Samsung Fino film camera",
+	},
+	{
+		name: "Minolta F15",
+		image:
+			"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot%202025-01-30%20at%2018.51.56-JOFpNzrMHXOl6XZvrkvfIFan9gfqvp.png",
+		alt: "Minolta F15 film camera",
+	},
+];
 
 export const LatestPhotoCarousel = ({
 	intervalTime = 5000, // 5 secs
 	autoplayEnabled = true,
-	photos = [],
 }: LatestPhotoCarouselProps) => {
 	const timerRef = useRef<NodeJS.Timeout | null>(null);
 	const [carouselApi, setCarouselApi] = useState<CarouselApi>();
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);
 
-	// Set loading to false when component mounts
 	useEffect(() => {
 		setIsLoading(false);
 	}, []);
 
 	const startAutoPlay = useCallback(() => {
-		if (timerRef.current) clearInterval(timerRef.current); // check if there is an existing timer and clear it
+		if (timerRef.current) clearInterval(timerRef.current);
 
 		const newTimer = setInterval(() => {
 			if (carouselApi?.canScrollNext()) {
-				// check if there is a next scroll
 				carouselApi.scrollNext();
 			} else {
 				carouselApi?.scrollTo(0);
@@ -47,12 +63,6 @@ export const LatestPhotoCarousel = ({
 		timerRef.current = newTimer;
 	}, [carouselApi, intervalTime]);
 
-	// if (error) {
-	// 	return <div className="flex justify-center items-center h-64 text-red-500">Error: {error}</div>;
-	// }
-
-	// carousel intiialization and cleanup
-	// Effect for API initialization
 	useEffect(() => {
 		if (!carouselApi) return;
 
@@ -66,27 +76,34 @@ export const LatestPhotoCarousel = ({
 		};
 	}, [carouselApi]);
 
-	// Effect for autoplay
 	useEffect(() => {
-		if (!carouselApi) return;
+		if (!carouselApi || !autoplayEnabled) return;
 
 		startAutoPlay();
 
 		return () => {
 			if (timerRef.current) clearInterval(timerRef.current);
 		};
-	}, [carouselApi, startAutoPlay]);
-
-	console.log("isLoading -> ", isLoading);
+	}, [carouselApi, startAutoPlay, autoplayEnabled]);
 
 	return (
-		<div className="flex flex-col items-center relative w-fit md:px-6">
+		<div className="flex flex-col items-center relative h-full w-full dark:bg-black">
 			{isLoading ? (
 				<div className="flex justify-center items-center h-64">
 					<Loader2 className="h-8 w-8 animate-spin" />
 				</div>
 			) : (
-				<div className="flex flex-col justify-center w-full">
+				<div className="relative flex flex-col justify-center w-full h-full">
+					<div className="flex justify-between items-center py-4">
+						<h4 className="font-medium">FEATURED PHOTOS</h4>
+						<a
+							href="#"
+							className="text-sm text-muted-foreground hover:text-foreground flex items-center"
+						>
+							VIEW ALL
+							<MoveRight className="h-4 w-4 ml-1" />
+						</a>
+					</div>
 					<Carousel
 						setApi={setCarouselApi}
 						onMouseEnter={() => {
@@ -95,40 +112,46 @@ export const LatestPhotoCarousel = ({
 							}
 						}}
 						onMouseLeave={startAutoPlay}
-						className="flex items-center justify-center relative w-full"
+						className="flex-grow"
+						opts={{
+							align: "start",
+							// loop: true,
+							slidesToScroll: 1,
+						}}
 					>
-						<CarouselContent className="-ml-2 md:ml-4 w-4/5">
+						<CarouselContent className="relative -ml-1">
 							{Array.from({ length: 5 }).map((_, index) => (
-								<CarouselItem key={index}>
-									<div className="p-1 shadow-lg border">
-										<Card className="rounded-none">
-											<CardContent className="flex aspect-square items-center justify-center p-12 rounded-none">
-												<span className="text-4xl font-semibold">{index + 1}</span>
-											</CardContent>
-										</Card>
-									</div>
+								<CarouselItem key={index} className="pl-1 basis-1/3">
+									<Card className="h-full bg-[#f5f5f5] dark: border-0 rounded-none">
+										<CardContent className="aspect-square relative">
+											{/* <Image
+												src={camera.image || "/placeholder.svg"}
+												alt={camera.alt}
+												fill
+												className="object-contain p-4"
+												sizes="33vw"
+											/> */}
+										</CardContent>
+									</Card>
 								</CarouselItem>
 							))}
 						</CarouselContent>
-						{/* <CarouselPrevious />
-						<CarouselNext /> */}
-					</Carousel>
 
-					{/* Slide indicators */}
-					<div className="flex justify-center gap-2 mt-3">
-						{Array.from({ length: 5 }).map((_, index) => (
-							<button
-								key={index}
-								type="button"
-								onClick={() => carouselApi?.scrollTo(index)}
-								className={`w-2 h-2 rounded-full transition-all ${
-									currentIndex === index
-										? "bg-amber-600 dark:bg-gray-200 w-4"
-										: "bg-gray-300 hover:bg-gray-400"
-								}`}
-							/>
-						))}
-					</div>
+						<div className="flex justify-center gap-2 mt-1">
+							{cameras.map((_, index) => (
+								<button
+									key={index}
+									type="button"
+									onClick={() => carouselApi?.scrollTo(index)}
+									className={`w-2 h-2 rounded-full transition-all ${
+										currentIndex === index
+											? "bg-amber-600 dark:bg-gray-200 w-4"
+											: "bg-gray-300 hover:bg-gray-400"
+									}`}
+								/>
+							))}
+						</div>
+					</Carousel>
 				</div>
 			)}
 		</div>

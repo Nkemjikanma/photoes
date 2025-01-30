@@ -9,7 +9,7 @@ import Image from "next/image";
 export default function Home() {
 	return (
 		<div className="flex flex-col items-center h-screen">
-			<div className="h-1/12 w-full">
+			<div className="h-1/12 w-full flex flex-col items-center">
 				<Navbar />
 				<Separator className="w-full" />
 			</div>
