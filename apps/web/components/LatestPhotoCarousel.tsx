@@ -16,6 +16,27 @@ interface LatestPhotoCarouselProps {
 	autoplayEnabled?: boolean;
 }
 
+const cameras = [
+	{
+		name: "Nikon EF92",
+		image:
+			"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot%202025-01-30%20at%2018.51.56-JOFpNzrMHXOl6XZvrkvfIFan9gfqvp.png",
+		alt: "Nikon EF92 film camera",
+	},
+	{
+		name: "Samsung Fino",
+		image:
+			"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot%202025-01-30%20at%2018.51.56-JOFpNzrMHXOl6XZvrkvfIFan9gfqvp.png",
+		alt: "Samsung Fino film camera",
+	},
+	{
+		name: "Minolta F15",
+		image:
+			"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot%202025-01-30%20at%2018.51.56-JOFpNzrMHXOl6XZvrkvfIFan9gfqvp.png",
+		alt: "Minolta F15 film camera",
+	},
+];
+
 export const LatestPhotoCarousel = ({
 	intervalTime = 5000, // 5 secs
 	autoplayEnabled = true,
