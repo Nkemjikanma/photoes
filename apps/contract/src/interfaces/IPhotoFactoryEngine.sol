@@ -44,6 +44,7 @@ interface IPhotoFactoryEngine {
         Nature,
         Portrait,
         Abstract,
+        Travel,
         Other
     }
 
@@ -51,7 +52,6 @@ interface IPhotoFactoryEngine {
         string coverImageURI;
         string featuredPhotoURI;
         string[] tags;
-        mapping(string => string) customAttributes;
     }
 
     struct CollectionCreationParams {
@@ -152,10 +152,12 @@ interface IPhotoFactoryEngine {
         uint256 originalPhotoTokenId;
     }
 
-    // Function declarations
+    /*//////////////////////////////////////////////////////////////
+                               FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
     function purchase(uint256 _photoId, uint32 _quantity, bool _isUSDC) external payable;
 
-    function getPhotoItem(uint256 tokenId) external view returns (PhotoView memory);
+    function getPhotoItem(uint256 _tokenId) external view returns (PhotoView memory);
 
     function createPhoto(
         string calldata name,
@@ -195,6 +197,8 @@ interface IPhotoFactoryEngine {
 
     // View Functions
     function getCollectionPhotos(uint256 _collectionId) external view returns (PhotoView[] memory);
+
+    function getCollection(uint256 _collectionId) external view returns (Collection memory);
 
     function getPhoto(uint256 _photoId) external view returns (PhotoView memory);
 

@@ -240,7 +240,7 @@ contract PhotoFactoryEngine is
         address _engineOwner,
         address _priceFeed,
         address _usdcAddress
-    ) FunctionsClient(_routerAddress) ConfirmedOwner(_engineOwner) 
+    ) FunctionsClient(_routerAddress) ConfirmedOwner(_engineOwner)
     // Ownable(initialOwner)
     {
         factory721 = PhotoFactory721(_photoFactory721);
@@ -466,7 +466,7 @@ contract PhotoFactoryEngine is
         }
 
         // handle edition size check for single and multiple edition types
-        if ((totalEditionsSold + _quantity) >= photo.editionSize) {
+        if ((totalEditionsSold + _quantity) > photo.editionSize) {
             revert PhotoFactoryEngine__EditionCopiesExhausted();
         }
 
@@ -815,6 +815,30 @@ contract PhotoFactoryEngine is
     /**
      * @notice Get all photos in a collection
      * @param _collectionId The ID of the collection
+     * @return collection The collection Object
+     */
+    function getCollection(uint256 _collectionId) external view override returns (Collection memory) {
+        Collection storage collection = s_collections[_collectionId];
+
+        return Collection({
+            collectionId: collection.collectionId,
+            name: collection.name,
+            description: collection.description,
+            creator: collection.creator,
+            createdAt: collection.createdAt,
+            category: collection.category,
+            metadata: CollectionMetadata({
+                coverImageURI: collection.metadata.coverImageURI,
+                featuredPhotoURI: collection.metadata.featuredPhotoURI,
+                tags: collection.metadata.tags
+            }),
+            photoIds: collection.photoIds
+        });
+    }
+
+    /**
+     * @notice Get all photos in a collection
+     * @param _collectionId The ID of the collection
      * @return Array of photo IDs in the collection
      */
     function getCollectionPhotos(uint256 _collectionId) external view override returns (PhotoView[] memory) {
@@ -896,7 +920,7 @@ contract PhotoFactoryEngine is
      * @param _tokenId The ID of the token to check
      * @return bool True if the token has been minted, false otherwise
      */
-    function verifyMint(uint256 _tokenId) public view override returns (bool) {
+    function verifyMint(uint256 _tokenId) external view override returns (bool) {
         return s_photos[_tokenId].createdAt != 0;
     }
 
@@ -1008,8 +1032,8 @@ contract PhotoFactoryEngine is
         return s_photos[_photoId].editionOwners[_owner];
     }
 
-    function getPhotoItem(uint256 tokenId) external view override returns (PhotoView memory) {
-        Photo storage photo = s_photos[tokenId];
+    function getPhotoItem(uint256 _tokenId) external view override returns (PhotoView memory) {
+        Photo storage photo = s_photos[_tokenId];
         return PhotoView({
             tokenId: photo.tokenId,
             name: photo.name,
