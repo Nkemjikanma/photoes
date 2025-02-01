@@ -147,8 +147,6 @@ export const LatestPhotoCarousel = ({
 												src={photo.image || "/placeholder.svg"}
 												alt={photo.title}
 												fill
-												// width={6000}
-												// height={4000}
 												className="object-cover w-full h-full scale-105 group-hover:scale-100 transition-transform duration-300"
 												sizes="100vw"
 												style={{ objectPosition: "center" }}
@@ -180,11 +178,16 @@ export const LatestPhotoCarousel = ({
 															: "opacity-0 translate-y-4"
 													}`}
 												>
-													<Button size="lg">Explore Collection</Button>
+													<Button
+														size="lg"
+														className="rounded-none bg-black backdrop-blur-md isolation-auto border-gray-50 before:absolute before:w-full before:transition-all before:duration-700 before:hover:w-full before:-left-full before:hover:left-0 before:rounded-full before:bg-amber-600 hover:text-gray-50 dark:text-gray-50 before:-z-10 before:aspect-square before:hover:scale-150 before:hover:duration-700 relative z-10 px-4 py-2 overflow-hidden group"
+													>
+														Explore Collection
+													</Button>
 													<Button
 														size="lg"
 														variant="outline"
-														className="hover:bg-orange-50 text-black dark:text-white dark:hover:bg-zinc-900"
+														className="bg-amber-600 rounded-none text-black dark:text-white dark:hover:bg-zinc-900"
 													>
 														Learn More
 													</Button>
