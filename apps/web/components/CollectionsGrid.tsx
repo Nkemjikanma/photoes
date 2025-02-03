@@ -34,8 +34,8 @@ export const CollectionsGrid = () => {
 
 	if (isLoading) {
 		return (
-			<section className="relative flex py-12 px-4 md:px-6 w-full">
-				<div className="max-w-6xl mx-auto w-full">
+			<section className="relative w-full flex py-6">
+				<div className="relative mx-auto w-5/6">
 					<h4 className="font-normal">Collections</h4>
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-5">
 						{Array.from({ length: 4 }).map((_, index) => (
@@ -73,10 +73,10 @@ export const CollectionsGrid = () => {
 	}
 
 	return (
-		<section className="relative flex py-12 px-4 md:px-6 w-full">
-			<div className="max-w-6xl mx-auto w-full">
+		<section className="relative flex py-6 w-full">
+			<div className="mx-auto w-5/6">
 				<h4 className="font-normal">Collections</h4>
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-5">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 mt-5">
 					{collections.map((collection) => (
 						<Card key={collection.id} className="overflow-hidden rounded-none border-zinc-600">
 							<CardContent className="p-0">
@@ -85,8 +85,9 @@ export const CollectionsGrid = () => {
 										src={collection.imageUrl || "/placeholder.svg"}
 										alt={collection.name}
 										fill
-										className="object-cover"
-										sizes="100vw"
+										loading="lazy"
+										className="relative object-cover object-center"
+										sizes="(max-width: 768px) 83.333vw, (max-width: 1024px) 41.666vw, 20.833vw"
 									/>
 								</div>
 								<div className="p-4">
