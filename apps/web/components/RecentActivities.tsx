@@ -44,26 +44,33 @@ export function RecentActivities() {
 					photoName: "Ocean Breeze",
 					timestamp: "10 minutes ago",
 				},
+				{
+					id: "4",
+					type: "purchase",
+					user: "name(.)eth",
+					photoName: "Ocean floor",
+					timestamp: "10 minutes ago",
+				},
 			]);
 			setIsLoading(false);
 		}, 1000);
 	}, []);
 
 	return (
-		<section className="relative w-screen flex py-12 px-4 md:px-6 bg-gray-50 dark:bg-black">
-			<div className="max-w-6xl mx-auto">
+		<section className="relative w-full flex py-6">
+			<div className="relative mx-auto w-5/6 ">
 				<h4 className="font-normal">Recent Activities</h4>
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-5">
+				<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 mt-5">
 					<AnimatePresence>
 						{isLoading
-							? Array.from({ length: 3 }).map((_, index) => (
-									<Card key={index}>
+							? Array.from({ length: 4 }).map((_, index) => (
+									<Card key={index} className="rounded-none border-zinc-600">
 										<CardContent className="p-4">
 											<div className="flex items-center space-x-4">
-												<Skeleton className="h-12 w-12" />
+												<Skeleton className="relative bg-zinc-200 dark:bg-zinc-700 w-16 h-16" />
 												<div className="space-y-2">
-													<Skeleton className="h-4 w-[200px]" />
-													<Skeleton className="h-4 w-[160px]" />
+													<Skeleton className="h-4 w-[100px]" />
+													<Skeleton className="h-4 w-[130px]" />
 												</div>
 											</div>
 										</CardContent>
@@ -77,10 +84,13 @@ export function RecentActivities() {
 										exit={{ opacity: 0, y: -20 }}
 										transition={{ duration: 0.5, delay: index * 0.1 }}
 									>
-										<Card key={activity.id} className="rounded-none border-zinc-600">
-											<CardContent className="p-4">
+										<Card
+											key={activity.id}
+											className="rounded-none border-zinc-600 shadow-lg dark:shadow-sm dark:shadow-gray-600"
+										>
+											<CardContent className="p-2">
 												<div className="flex items-center space-x-4">
-													<Avatar className="relative bg-zinc-200 dark:bg-zinc-700 w-24 h-24">
+													<Avatar className="relative bg-zinc-200 dark:bg-zinc-700 w-16 h-16">
 														<AvatarImage src={activity.user} />
 														<AvatarFallback className="absolute inset-0 flex items-center justify-center text-lg text-amber-600">
 															{activity.user[0]}

@@ -106,24 +106,24 @@ export const LatestPhotoCarousel = ({
 
 	return (
 		<div className="relative flex flex-col items-center dark:bg-black min-w-screen w-full">
-			{isLoading ? (
-				<div className="flex justify-center items-center h-64">
-					<Loader2 className="h-8 w-8 animate-spin" />
+			<div className="relative w-full flex flex-col justify-center items-center">
+				<div className="flex justify-between py-4 w-10/12">
+					<h4 className="font-medium">FEATURED PHOTOS</h4>
+					<a
+						href="#"
+						className="text-sm text-muted-foreground hover:text-foreground flex items-center"
+					>
+						VIEW ALL
+						<MoveRight className="h-4 w-4 ml-1" />
+					</a>
 				</div>
-			) : (
-				<div className="relative w-full flex flex-col justify-center items-center">
-					<div className="flex justify-between py-4 w-10/12">
-						<h4 className="font-medium">FEATURED PHOTOS</h4>
-						<a
-							href="#"
-							className="text-sm text-muted-foreground hover:text-foreground flex items-center"
-						>
-							VIEW ALL
-							<MoveRight className="h-4 w-4 ml-1" />
-						</a>
-					</div>
 
-					<div className="relative flex flex-col items-center w-10/12 h-[65vh]">
+				<div className="relative flex flex-col items-center w-10/12 h-[62vh]">
+					{isLoading ? (
+						<div className="flex justify-center items-center h-64">
+							<Loader2 className="h-8 w-8 animate-spin" />
+						</div>
+					) : (
 						<Carousel
 							setApi={setCarouselApi}
 							onMouseEnter={() => {
@@ -147,9 +147,12 @@ export const LatestPhotoCarousel = ({
 												src={photo.image || "/placeholder.svg"}
 												alt={photo.title}
 												fill
-												className="object-cover w-full h-full scale-105 group-hover:scale-100 transition-transform duration-300"
-												sizes="100vw"
-												style={{ objectPosition: "center" }}
+												quality={100}
+												// placeholder="blur"
+												// blurDataURL=""
+												className="object-cover max-w-full h-auto scale-105 group-hover:scale-100 transition-transform duration-300"
+												priority={true}
+												sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
 											/>
 											<div className="absolute inset-0 bg-black bg-opacity-50" />
 											<div className="absolute inset-0 flex flex-col justify-center items-center text-white text-center p-4">
@@ -198,24 +201,24 @@ export const LatestPhotoCarousel = ({
 								))}
 							</CarouselContent>
 						</Carousel>
-					</div>
-
-					<div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-						{featuredPhotos.map((photo, index) => (
-							<button
-								key={photo.id}
-								type="button"
-								onClick={() => carouselApi?.scrollTo(index)}
-								className={`w-2 h-2 rounded-full transition-all ${
-									currentIndex === index
-										? "bg-amber-600 dark:bg-amber-600 w-4"
-										: "bg-gray-300 hover:bg-gray-400"
-								}`}
-							/>
-						))}
-					</div>
+					)}
 				</div>
-			)}
+
+				<div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+					{featuredPhotos.map((photo, index) => (
+						<button
+							key={photo.id}
+							type="button"
+							onClick={() => carouselApi?.scrollTo(index)}
+							className={`w-2 h-2 rounded-full transition-all ${
+								currentIndex === index
+									? "bg-amber-600 dark:bg-amber-600 w-4"
+									: "bg-gray-300 hover:bg-gray-400"
+							}`}
+						/>
+					))}
+				</div>
+			</div>
 		</div>
 	);
 };

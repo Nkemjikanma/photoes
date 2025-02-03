@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/ThemeProvider";
-import { Web3Provider } from "@/providers/Web3Provider";
+import { ThirdwebProvider } from "thirdweb/react";
 
 // Font definition
 const commitMono = localFont({
@@ -38,7 +37,7 @@ export default function RootLayout({
 				className={`${commitMono.variable} font-sans antialiased bg-grey text-zinc-800 dark:text-zinc-200 dark:bg-black`}
 			>
 				<ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-					<Web3Provider>{children}</Web3Provider>
+					<ThirdwebProvider>{children}</ThirdwebProvider>
 				</ThemeProvider>
 			</body>
 		</html>
