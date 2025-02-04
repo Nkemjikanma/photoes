@@ -204,7 +204,7 @@ export const LatestPhotoCarousel = ({
 					)}
 				</div>
 
-				<div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+				<div className="absolute bottom-12 left-0 right-0 flex justify-center gap-2 z-10">
 					{featuredPhotos.map((photo, index) => (
 						<button
 							key={photo.id}

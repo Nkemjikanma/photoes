@@ -1,4 +1,6 @@
+import { isLoggedIn } from "@/components/web3/actions/auth";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { useActiveAccount } from "thirdweb/react";
 import { ModeToggle } from "./ModeToggle";
 import { AddButton } from "./assets/AddButton";
@@ -7,7 +9,6 @@ import { Separator } from "./ui/separator";
 import { LocalConnectButton } from "./web3/LocalConnectButton";
 
 export const Navbar = () => {
-	const account = useActiveAccount();
 	return (
 		<nav className="flex flex-col items-center justify-center py-3 px-4 md:px-0 font-bold gap-2 w-10/12 min-w-96">
 			<div className="w-full items-center justify-center flex flex-row">
@@ -23,11 +24,7 @@ export const Navbar = () => {
 				<div className="flex flex-row gap-2">
 					<ModeToggle />
 					<div className="hidden md:block">
-						{account ? (
-							<Link href={`/profile/${account?.address}`}>Profile</Link>
-						) : (
-							<LocalConnectButton style={{}} />
-						)}
+						<LocalConnectButton />
 					</div>
 				</div>
 			</div>

@@ -2,8 +2,13 @@
 import { Main } from "@/components/Main";
 import { Navbar } from "@/components/Navbar";
 import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
+import { useActiveAccount } from "thirdweb/react";
 
 export default function Home() {
+	const account = useActiveAccount();
+
+	console.log(account);
 	return (
 		<div className="flex flex-col justify-center items-center min-w-96 mx-auto">
 			<div className="h-1/12 w-full flex flex-col items-center">
@@ -18,7 +23,9 @@ export default function Home() {
 
 			{/* Footer */}
 			<footer className="h-1/12 w-full p-3">
+				<Link href={`/${account?.address}`}>Profile</Link>
 				<p>here</p>
+
 				{/* Footer content goes here */}
 			</footer>
 		</div>
