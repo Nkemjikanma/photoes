@@ -35,7 +35,7 @@ const featuredPhotos = [
 	{
 		id: 3,
 		title: "Abstract Reality",
-		description: "A mesmerizing play of light and shadow",
+		description: "A mesmerizing play of light and shadow-sm",
 		image: "/4.jpg",
 		position: "center",
 	},
@@ -148,7 +148,7 @@ export const LatestPhotoCarousel = ({
 												alt={photo.title}
 												fill
 												quality={100}
-												// placeholder="blur"
+												// placeholder="blur-sm"
 												// blurDataURL=""
 												className="object-cover max-w-full h-auto scale-105 group-hover:scale-100 transition-transform duration-300"
 												priority={true}
@@ -183,7 +183,7 @@ export const LatestPhotoCarousel = ({
 												>
 													<Button
 														size="lg"
-														className="rounded-none bg-black backdrop-blur-md isolation-auto border-gray-50 before:absolute before:w-full before:transition-all before:duration-700 before:hover:w-full before:-left-full before:hover:left-0 before:rounded-full before:bg-amber-600 hover:text-gray-50 dark:text-gray-50 before:-z-10 before:aspect-square before:hover:scale-150 before:hover:duration-700 relative z-10 px-4 py-2 overflow-hidden group"
+														className="rounded-none bg-black backdrop-blur-md isolation-auto border-gray-50 before:absolute before:w-full before:transition-all before:duration-700 hover:before:w-full before:-left-full hover:before:left-0 before:rounded-full before:bg-amber-600 hover:text-gray-50 dark:text-gray-50 before:-z-10 before:aspect-square hover:before:scale-150 hover:before:duration-700 relative z-10 px-4 py-2 overflow-hidden group"
 													>
 														Explore Collection
 													</Button>

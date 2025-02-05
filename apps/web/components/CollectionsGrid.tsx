@@ -63,7 +63,7 @@ export const CollectionsGrid = () => {
 					<p className="text-xl mb-8">No collections have been created just yet.</p>
 					<Button
 						title="Add New"
-						className="group cursor-pointer outline-none hover:rotate-90 duration-300"
+						className="group cursor-pointer outline-hidden hover:rotate-90 duration-300"
 					>
 						<AddButton />
 					</Button>
