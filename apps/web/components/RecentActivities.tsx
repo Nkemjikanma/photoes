@@ -86,7 +86,7 @@ export function RecentActivities() {
 									>
 										<Card
 											key={activity.id}
-											className="rounded-none border-zinc-600 shadow-lg dark:shadow-sm dark:shadow-gray-600"
+											className="rounded-none border-zinc-600 shadow-lg dark:shadow-xs dark:shadow-gray-600"
 										>
 											<CardContent className="p-2">
 												<div className="flex items-center space-x-4">
