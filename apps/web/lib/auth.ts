@@ -1,6 +1,7 @@
 "use server";
 import { client } from "@/lib/client";
 import { cookies } from "next/headers";
+import type { SignLoginPayloadParams } from "thirdweb/auth";
 import { type VerifyLoginPayloadParams, createAuth } from "thirdweb/auth";
 import { privateKeyToAccount } from "thirdweb/wallets";
 import { stringToHex } from "viem";
@@ -8,6 +9,13 @@ import { stringToHex } from "viem";
 type PayloadParams = {
 	address: string;
 	chainId: number;
+};
+
+// payload?: SignLoginPayloadParams;
+type AdminCheckResult = {
+	isAdmin: boolean;
+	payload?: any;
+	error?: string;
 };
 
 // const data = stringToHex("Hello World!", { size: 32 });
@@ -22,6 +30,7 @@ const COOKIES_CONFIG = {
 
 // const privateKey = stringToHex(process.env.THIRDWEB_ADMIN_PRIVATE_KEY as string);
 const privateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY;
+const ADMIN_ADDRESS = process.env.DEV_ADDRESS;
 
 // Validate private key
 if (!privateKey || !privateKey.startsWith("0x")) {
@@ -56,7 +65,6 @@ export async function login(payload: VerifyLoginPayloadParams) {
 export async function isLoggedIn() {
 	const cookieStore = await cookies();
 	const jwt = cookieStore.get("jwt");
-	console.log("jwt", jwt);
 	if (!jwt?.value) {
 		return false;
 	}
@@ -70,4 +78,69 @@ export async function isLoggedIn() {
 export async function logout() {
 	const cookieStore = await cookies();
 	cookieStore.delete("jwt");
+}
+
+export async function isAdmin(): Promise<AdminCheckResult> {
+	try {
+		const cookieStore = await cookies();
+		const jwt = cookieStore.get("jwt");
+
+		if (!jwt?.value) {
+			return {
+				isAdmin: false,
+				error: "No JWT token found",
+			};
+		}
+
+		const authResult = await thirdwebAuth.verifyJWT({ jwt: jwt.value });
+		if (!authResult.valid) {
+			return {
+				isAdmin: false,
+				error: authResult.error,
+			};
+		}
+
+		console.log("authed", authResult.parsedJWT);
+
+		const isAdminAddress = authResult.parsedJWT.sub.toLowerCase() === ADMIN_ADDRESS?.toLowerCase();
+		// Additional security checks
+		const currentTime = Math.floor(Date.now() / 1000);
+		const tokenNotExpired = currentTime <= authResult.parsedJWT.exp;
+		const tokenActive = currentTime >= authResult.parsedJWT.nbf;
+
+		if (!isAdminAddress) {
+			return {
+				isAdmin: false,
+				error: "Address is not authorized as admin",
+				payload: authResult.parsedJWT,
+			};
+		}
+
+		if (!tokenNotExpired) {
+			return {
+				isAdmin: false,
+				error: "Token has expired",
+				payload: authResult.parsedJWT,
+			};
+		}
+
+		if (!tokenActive) {
+			return {
+				isAdmin: false,
+				error: "Token not yet active",
+				payload: authResult.parsedJWT,
+			};
+		}
+
+		return {
+			isAdmin: isAdminAddress,
+			payload: authResult.parsedJWT,
+		};
+	} catch (error) {
+		console.error("Admin check failed:", error);
+		return {
+			isAdmin: false,
+			error: error instanceof Error ? error.message : "Unknown error occurred",
+		};
+	}
 }

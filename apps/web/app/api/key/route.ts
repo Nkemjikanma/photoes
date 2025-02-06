@@ -1,6 +1,5 @@
 import { pinata } from "@/lib/uploads";
 import { type NextRequest, NextResponse } from "next/server";
-import { permission } from "process";
 import { v4 as uuidv4 } from "uuid";
 const pinataJWT = process.env.PINATA_JWT;
 

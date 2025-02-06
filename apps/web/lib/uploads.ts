@@ -2,12 +2,15 @@ import { PinataSDK } from "pinata-web3";
 
 export const pinata = new PinataSDK({
 	pinataJwt: process.env.PINATA_JWT,
-	pinataGateway: "salmon-realistic-muskox-762.mypinata.cloud",
+	pinataGateway: process.env.PINATA_GATEWAY,
 });
 
-const auth = await pinata.testAuthentication()
+export interface SelectedFilesType {
+	selectedFiles: FileList;
+}
+const auth = await pinata.testAuthentication();
 
-console.log("this is auth: ", auth)
+console.log("this is auth: ", auth);
 
 type GroupResponseItem = {
 	id: string;
@@ -16,24 +19,6 @@ type GroupResponseItem = {
 	updatedAt: string;
 	createdAt: string;
 };
-const createGroup = async (groupName: string): Promise<GroupResponseItem> => {
-	const group = await pinata.groups.create({
-		name: groupName,
-	});
-
-	return group;
-};
-
-const addCIDSToGroup = async(groupId: string, cids: string[]) {
-  const group = await pinata.groups.addCids({
-    groupId,
-    cids: [...cids]
-  })
-
-  if(group !== 'OK') {
-    console.log("Error")
-  }
-}
 
 // get temp api key for uploads
 export const generatePinataKey = async () => {
@@ -54,46 +39,54 @@ export const generatePinataKey = async () => {
 	}
 };
 
-// upload file along with the temp key
-export async function uploadFile(selectedFile: File | undefined, key: string) {
-	if (!selectedFile) {
-		console.log("No file provided");
+const createGroup = async (groupName: string): Promise<GroupResponseItem> => {
+	const group = await pinata.groups.create({
+		name: groupName,
+	});
 
+	return group;
+};
+
+const addCIDSToGroup = async (groupId: string, cids: string[]) => {
+	const group = await pinata.groups.addCids({
+		groupId,
+		cids: [...cids],
+	});
+
+	if (group !== "OK") {
+		console.log("Error");
+	}
+};
+
+// upload file along with the temp key
+export async function uploadFiles(selectedFiles: File[], key: string, groupName?: string) {
+	if (!selectedFiles || selectedFiles.length === 0) {
+		console.log("No files provided");
 		return;
 	}
 
 	try {
-		const formData = new FormData();
-		formData.append("file", selectedFile);
+		// if is new upload single upload, send to base group
+		if (selectedFiles.length === 1 && !groupName) {
+			// TODO: Add Base group id
+			const uploadData = await pinata.upload.file(selectedFiles[0]).key(key).group("Base group id");
+			const url = await pinata.gateways.convert(uploadData.IpfsHash);
 
-		// TODO: improve metat data and pass argument with metadata
-		const metadata = JSON.stringify({
-			name: `${selectedFile.name}`,
-		});
-		formData.append("metadata", metadata);
-
-		const options = JSON.stringify({
-			cidVersion: 1,
-		});
-		formData.append("pinataOptions", options);
-
-		const uploadRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${key}`,
-			},
-			body: formData,
-		});
-
-		console.log({ uploadStatus: uploadRes.status });
-
-		if (uploadRes.status !== 200) {
-			throw Error;
+			return url;
 		}
 
-		const uploadResJSON = await uploadRes.json();
+		// create new group
+		if (selectedFiles.length > 1 && groupName) {
+			const newGroup: GroupResponseItem = await createGroup(groupName);
+			const uploadData = await pinata.upload
+				.fileArray([...selectedFiles])
+				.key(key)
+				.group(newGroup.id);
 
-		return uploadResJSON.ipfsHash;
+			const url = await pinata.gateways.convert(uploadData.IpfsHash);
+
+			return url;
+		}
 	} catch (e) {
 		console.log("Error uploading file", e);
 	}

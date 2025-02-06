@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Link from "next/link";
 import "./globals.css";
+
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { ThirdwebProvider } from "thirdweb/react";
 
@@ -34,7 +36,9 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body
-				className={`${commitMono.variable} font-sans antialiased bg-grey text-zinc-800 dark:text-zinc-200 dark:bg-black`}
+				className={
+					"font-display antialiased bg-grey text-zinc-800 dark:text-zinc-200 dark:bg-black"
+				}
 			>
 				<ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
 					<ThirdwebProvider>{children}</ThirdwebProvider>

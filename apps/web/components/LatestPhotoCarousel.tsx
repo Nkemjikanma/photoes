@@ -108,10 +108,10 @@ export const LatestPhotoCarousel = ({
 		<div className="relative flex flex-col items-center dark:bg-black min-w-screen w-full">
 			<div className="relative w-full flex flex-col justify-center items-center">
 				<div className="flex justify-between py-4 w-10/12">
-					<h4 className="font-medium">FEATURED PHOTOS</h4>
+					<h4 className="font-normal">FEATURED PHOTOS</h4>
 					<a
-						href="#"
-						className="text-sm text-muted-foreground hover:text-foreground flex items-center"
+						href="/gallery"
+						className="text-sm text-zinc-500 hover:text-zinc-800 flex items-center"
 					>
 						VIEW ALL
 						<MoveRight className="h-4 w-4 ml-1" />
@@ -132,27 +132,40 @@ export const LatestPhotoCarousel = ({
 								}
 							}}
 							onMouseLeave={startAutoPlay}
-							className="relative w-full h-full"
+							className="absolute flex flex-col w-full h-full"
 							opts={{
 								align: "start",
 								// loop: true,
 								slidesToScroll: 1,
 							}}
 						>
-							<CarouselContent className="relative h-full mx-auto">
+							<CarouselContent className="relative h-full w-full mx-auto">
 								{featuredPhotos.map((photo, index) => (
-									<CarouselItem key={photo.id} className="relative h-[59vh] px-1">
+									<CarouselItem key={photo.id} className="relative h-[60vh] px-1">
 										<div className="relative h-full w-full overflow-hidden group">
+											{/* <div className="absolute inset-0 bg-black bg-opacity-30" />{" "} */}
+											{/* Reduced opacity */}
 											<Image
-												src={photo.image || "/placeholder.svg"}
+												src={photo.image}
 												alt={photo.title}
 												fill
 												quality={100}
-												// placeholder="blur-sm"
-												// blurDataURL=""
-												className="object-cover max-w-full h-auto scale-105 group-hover:scale-100 transition-transform duration-300"
+												className="relative object-cover object-center h-auto scale-105 group-hover:scale-100 transition-transform duration-300 aspect-3/2 inline max-w-none"
 												priority={true}
 												sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+												onError={(e) => {
+													console.error(`Failed to load image: ${photo.image}`);
+													e.currentTarget.src = "/placeholder.svg";
+												}}
+												onLoad={() => {
+													console.log(`Successfully loaded image: ${photo.image}`);
+												}}
+											/>
+											<img
+												src={photo.image}
+												alt={photo.title}
+												width="400px"
+												className="aspect-3/2 inline max-w-none"
 											/>
 											<div className="absolute inset-0 bg-black bg-opacity-50" />
 											<div className="absolute inset-0 flex flex-col justify-center items-center text-white text-center p-4">

@@ -15,7 +15,7 @@ export const Navbar = () => {
 				<div className="flex flex-1 items-center">
 					<a
 						href="/"
-						className="flex items-center gap-1 w-fit p-1 h5 text-zinc-600 hover:text-zinc-900 dark:hover:text-amber-700 transition-all font-normal dark:text-amber-600"
+						className="antialiased flex items-center gap-1 w-fit p-1 h5 text-zinc-600 hover:text-zinc-900 dark:hover:text-amber-700 transition-all font-normal dark:text-amber-600"
 					>
 						<PhotoFrame width="20px" height="30px" />
 						Esemese
