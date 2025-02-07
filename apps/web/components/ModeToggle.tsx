@@ -23,7 +23,7 @@ export function ModeToggle() {
 				<Button
 					variant="outline"
 					size="icon"
-					className="rounded-none border border-zinc-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900 focus:border-0 outline-zinc-200"
+					className="rounded-none border border-zinc-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900 focus:border-0 outline-zinc-200 p-[19.5px]"
 				>
 					<Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 rounded-none" />
 					<Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -32,7 +32,7 @@ export function ModeToggle() {
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="end"
-				className="rounded-none border-zinc-200 dark:border-zinc-800 p-0"
+				className="rounded-none border-zinc-200 dark:border-zinc-800 p-0 bg-white dark:bg-black"
 			>
 				{themeList.map((themeItem, index) => (
 					<DropdownMenuItem

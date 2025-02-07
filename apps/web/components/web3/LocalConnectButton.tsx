@@ -4,9 +4,9 @@ import { client } from "@/lib/client";
 import { useEffect, useState } from "react";
 
 import { useTheme } from "next-themes";
-import { defineChain } from "thirdweb";
 import { base, baseSepolia } from "thirdweb/chains";
 import { AutoConnect, ConnectButton, darkTheme, lightTheme, useConnect } from "thirdweb/react";
+import { createWallet } from "thirdweb/wallets";
 
 export const LocalConnectButton = () => {
 	const { theme } = useTheme();
@@ -24,8 +24,15 @@ export const LocalConnectButton = () => {
 
 	const appChain: typeof base = process.env.NODE_ENV === "development" ? baseSepolia : base;
 
+	const wallets = [
+		// inAppWallet(),
+		createWallet("io.metamask"),
+		createWallet("com.coinbase.wallet"),
+		createWallet("me.rainbow"),
+	];
+
 	return (
-		<div className="relative border h-fit min-w-24 rounded-none border-zinc-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900">
+		<div className="relative h-fit min-w-24 rounded-none hover:bg-gray-100 border-zinc-200 dark:border-zinc-800 dark:hover:bg-zinc-900">
 			<ConnectButton
 				appMetadata={{
 					name: "Esemese.xyz",
@@ -38,6 +45,7 @@ export const LocalConnectButton = () => {
 				// 	chain: defineChain(appChain.id),
 				// 	sponsorGas: false,
 				// }}
+				wallets={wallets}
 				auth={{
 					isLoggedIn: async (address) => {
 						console.log("checking if logged in!", { address });
@@ -55,10 +63,13 @@ export const LocalConnectButton = () => {
 					},
 				}}
 				connectButton={{
+					label: "sign-in",
+					className: ".connect-button",
 					style: {
-						borderRadius: "0px ",
-						padding: "9px 10px",
-						height: "fit-content",
+						border: theme === "light" ? "1px solid #e4e4e7" : "1px solid #27272a",
+						borderRadius: "0px",
+						padding: "2px",
+						height: "41px",
 						background: "transparent",
 						color: theme === "light" ? "#000000" : "#ffffff",
 					},
@@ -71,9 +82,12 @@ export const LocalConnectButton = () => {
 				detailsButton={{
 					className: "rounded-none",
 					style: {
+						border: theme === "light" ? "1px solid #e4e4e7" : "1px solid #27272a",
 						borderRadius: "0px",
 						padding: "2px",
-						height: "fit-content",
+						height: "41px",
+						background: "transparent",
+						color: theme === "light" ? "#000000" : "#ffffff",
 					},
 				}}
 				connectModal={{
@@ -81,6 +95,9 @@ export const LocalConnectButton = () => {
 					size: "compact",
 				}}
 				theme={theme === "light" ? "light" : "dark"}
+				detailsModal={{
+					showTestnetFaucet: true,
+				}}
 			/>
 		</div>
 	);

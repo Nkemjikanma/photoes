@@ -1,7 +1,9 @@
+import { CategoriesDisplay } from "@/components/CategoriesDisplay";
 import { Separator } from "@/components/ui/separator";
 import { CollectionsGrid } from "./CollectionsGrid";
 import { LatestPhotoCarousel } from "./LatestPhotoCarousel";
 import { RecentActivities } from "./RecentActivities";
+
 import { PhotoFrame } from "./assets/PhotoFrame";
 
 export const Main = () => {
@@ -10,6 +12,7 @@ export const Main = () => {
 			<LatestPhotoCarousel />
 			<RecentActivities />
 			<CollectionsGrid />
+			<CategoriesDisplay />
 			{/*category grid */}Press anytime to CMD-K search
 		</div>
 	);

@@ -1,31 +1,18 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import Link from "next/link";
 import "./globals.css";
 
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { ThirdwebProvider } from "thirdweb/react";
 
-// Font definition
-const commitMono = localFont({
-	src: [
-		{
-			path: "../public/fonts/CommitMono-400-Regular.otf",
-			weight: "400",
-			style: "normal",
-		},
-		{
-			path: "../public/fonts/CommitMono-700-Regular.otf",
-			weight: "700",
-			style: "normal",
-		},
-	],
-	variable: "--font-commit-mono",
-});
-
 export const metadata: Metadata = {
-	title: "Photoes",
-	description: "Photoes by Nkmejika",
+	title: "Esemese",
+	description: "Eseme by Nkmejika",
+	other: {
+		"style-preload": {
+			type: "text/css",
+			as: "style",
+		},
+	},
 };
 
 export default function RootLayout({

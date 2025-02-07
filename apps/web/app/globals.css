@@ -133,4 +133,9 @@
 	.layout {
 		@apply mx-auto w-11/12;
 	}
+
+	.connect-button:hover {
+		background: "#f3f4f6";
+		border-color: " #e4e4e7";
+	}
 }

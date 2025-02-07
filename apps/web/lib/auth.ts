@@ -1,10 +1,9 @@
 "use server";
 import { client } from "@/lib/client";
 import { cookies } from "next/headers";
-import type { SignLoginPayloadParams } from "thirdweb/auth";
 import { type VerifyLoginPayloadParams, createAuth } from "thirdweb/auth";
+import type { JWTPayload } from "thirdweb/utils";
 import { privateKeyToAccount } from "thirdweb/wallets";
-import { stringToHex } from "viem";
 
 type PayloadParams = {
 	address: string;
@@ -14,21 +13,10 @@ type PayloadParams = {
 // payload?: SignLoginPayloadParams;
 type AdminCheckResult = {
 	isAdmin: boolean;
-	payload?: any;
+	payload?: JWTPayload;
 	error?: string;
 };
 
-// const data = stringToHex("Hello World!", { size: 32 });
-
-const COOKIES_CONFIG = {
-	maxAge: 60 * 60 * 24 * 7, // 1 week
-	path: "/",
-	domain: process.env.HOST ?? "localhost",
-	httpOnly: true,
-	secure: process.env.NODE_ENV === "production",
-};
-
-// const privateKey = stringToHex(process.env.THIRDWEB_ADMIN_PRIVATE_KEY as string);
 const privateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY;
 const ADMIN_ADDRESS = process.env.DEV_ADDRESS;
 
@@ -57,7 +45,6 @@ export async function login(payload: VerifyLoginPayloadParams) {
 		const jwt = await thirdwebAuth.generateJWT({
 			payload: verifyPayload.payload,
 		});
-		const cookieStore = await cookies();
 		cookieStore.set("jwt", jwt);
 	}
 }

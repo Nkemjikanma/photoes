@@ -1,4 +1,4 @@
-import { isLoggedIn } from "@/components/web3/actions/auth";
+import { isLoggedIn } from "@/lib/auth";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { useActiveAccount } from "thirdweb/react";
@@ -21,7 +21,7 @@ export const Navbar = () => {
 						Esemese
 					</a>
 				</div>
-				<div className="flex flex-row gap-2">
+				<div className="flex flex-row gap-2 w-[216px]">
 					<ModeToggle />
 					<div className="hidden md:block">
 						<LocalConnectButton />

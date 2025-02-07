@@ -1,3 +1,4 @@
+import Footer from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
@@ -12,12 +13,9 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
 				<Navbar />
 				<Separator className="w-full" />
 			</div>
-			{children} {/* Footer */}
-			<footer className="h-1/12 w-full p-3">
-				{/* <Link href={`/${account?.address}`}>Profile</Link> */}
-				<p>here</p>
-
-				{/* Footer content goes here */}
+			{children}
+			<footer className="h-1/12 w-full">
+				<Footer />
 			</footer>
 		</div>
 	);
