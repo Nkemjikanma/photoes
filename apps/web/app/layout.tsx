@@ -1,29 +1,18 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
+
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { ThirdwebProvider } from "thirdweb/react";
 
-// Font definition
-const commitMono = localFont({
-	src: [
-		{
-			path: "../public/fonts/CommitMono-400-Regular.otf",
-			weight: "400",
-			style: "normal",
-		},
-		{
-			path: "../public/fonts/CommitMono-700-Regular.otf",
-			weight: "700",
-			style: "normal",
-		},
-	],
-	variable: "--font-commit-mono",
-});
-
 export const metadata: Metadata = {
-	title: "Photoes",
-	description: "Photoes by Nkmejika",
+	title: "Esemese",
+	description: "Eseme by Nkmejika",
+	other: {
+		"style-preload": {
+			type: "text/css",
+			as: "style",
+		},
+	},
 };
 
 export default function RootLayout({
@@ -34,7 +23,9 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body
-				className={`${commitMono.variable} font-sans antialiased bg-grey text-zinc-800 dark:text-zinc-200 dark:bg-black`}
+				className={
+					"font-display antialiased bg-grey text-zinc-800 dark:text-zinc-200 dark:bg-black"
+				}
 			>
 				<ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
 					<ThirdwebProvider>{children}</ThirdwebProvider>
