@@ -13,7 +13,6 @@ export const Main = () => {
 			<RecentActivities />
 			<CollectionsGrid />
 			<CategoriesDisplay />
-			{/*category grid */}Press anytime to CMD-K search
 		</div>
 	);
 };

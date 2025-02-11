@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
 	Carousel,
 	type CarouselApi,
@@ -10,6 +9,7 @@ import {
 } from "@/components/ui/carousel";
 import { Loader2, MoveRight } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface LatestPhotoCarouselProps {
@@ -24,6 +24,7 @@ const featuredPhotos = [
 		description: "A stunning cityscape at twilight",
 		image: "/2.jpg",
 		position: "center",
+		collectionId: 1,
 	},
 	{
 		id: 2,
@@ -31,6 +32,7 @@ const featuredPhotos = [
 		description: "Breathtaking view of a mountain range",
 		image: "/3.jpg",
 		position: "center",
+		collectionId: 2,
 	},
 	{
 		id: 3,
@@ -38,6 +40,7 @@ const featuredPhotos = [
 		description: "A mesmerizing play of light and shadow-sm",
 		image: "/4.jpg",
 		position: "center",
+		collectionId: 3,
 	},
 	{
 		id: 4,
@@ -45,6 +48,7 @@ const featuredPhotos = [
 		description: "Tranquil lake reflecting the sky",
 		image: "/5.jpg",
 		position: "center",
+		collectionId: 4,
 	},
 	{
 		id: 5,
@@ -52,6 +56,7 @@ const featuredPhotos = [
 		description: "Rare capture of nature in action",
 		image: "/6.jpg",
 		position: "center",
+		collectionId: 5,
 	},
 ];
 
@@ -63,6 +68,7 @@ export const LatestPhotoCarousel = ({
 	const [carouselApi, setCarouselApi] = useState<CarouselApi>();
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);
+	const router = useRouter();
 
 	useEffect(() => {
 		setIsLoading(false);
@@ -197,6 +203,9 @@ export const LatestPhotoCarousel = ({
 													<Button
 														size="lg"
 														className="rounded-none bg-black backdrop-blur-md isolation-auto border-gray-50 before:absolute before:w-full before:transition-all before:duration-700 hover:before:w-full before:-left-full hover:before:left-0 before:rounded-full before:bg-amber-600 hover:text-gray-50 dark:text-gray-50 before:-z-10 before:aspect-square hover:before:scale-150 hover:before:duration-700 relative z-10 px-4 py-2 overflow-hidden group"
+														onClick={() => {
+															router.push(`/gallery/${photo.collectionId}`);
+														}}
 													>
 														Explore Collection
 													</Button>

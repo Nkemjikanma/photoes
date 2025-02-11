@@ -19,12 +19,12 @@ export const ens = {
 
 export default function Footer() {
 	return (
-		<footer className="w-full border-t border-gray-200 dark:border-gray-800 ">
-			<div className="mx-auto max-w-3xl py-2 flex flex-col md:flex-row items-start gap-8">
-				<div className="max-w-[600px] text-gray-600 dark:text-white text-sm">
-					Made with love - nkemjika &copy; 🧌.
+		<footer className="relative flex w-full items-end">
+			<div className="mx-auto max-w-3xl flex flex-col gap-1 items-center justify-center">
+				<div className="relative max-w-[600px] text-gray-600 dark:text-white text-sm">
+					Made with love - nkemjika&copy; 🧌
 				</div>
-				<nav className="flex flex-row space-y-4 dark:text-white ">
+				<nav className="relative flex flex-row dark:text-white">
 					{links.map((link, index) => (
 						<Link
 							key={link.name}

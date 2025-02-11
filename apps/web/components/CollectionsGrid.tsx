@@ -95,9 +95,7 @@ export const CollectionsGrid = () => {
 									<p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
 										{collection.photoCount} photos
 									</p>
-									<Button asChild className="rounded-none">
-										<Link href={`/collections/${collection.id}`}>View Collection</Link>
-									</Button>
+									<Link href={`/collections/${collection.id}`}>View Collection</Link>
 								</div>
 							</CardContent>
 						</Card>

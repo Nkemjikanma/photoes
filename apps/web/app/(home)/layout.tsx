@@ -14,7 +14,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
 				<Separator className="w-full" />
 			</div>
 			{children}
-			<footer className="h-1/12 w-full">
+			<footer className="h-1/12 w-full mt-4">
 				<Footer />
 			</footer>
 		</div>
