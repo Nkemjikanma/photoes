@@ -97,7 +97,7 @@ const GalleryPage = () => {
 													type="button"
 													variant="outline"
 													className="w-fit rounded-none text-white hover:text-amber-600 transition-colors duration-300"
-													onClick={() => router.push(`/collections/${collection.id}`)}
+													onClick={() => router.push(`/gallery/${collection.id}`)}
 												>
 													Open collection
 												</Button>
