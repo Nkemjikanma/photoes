@@ -216,7 +216,7 @@ export const CategoriesDisplay = () => {
 										src={filteredPhotos[currentImageIndex].image}
 										alt={filteredPhotos[currentImageIndex].title}
 										fill
-										className="object-cover rounded-lg"
+										className="object-cover rounded-none"
 									/>
 									<div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent text-white rounded-b-lg">
 										<h3 className="text-xl font-semibold">
