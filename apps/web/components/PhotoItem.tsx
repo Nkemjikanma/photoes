@@ -28,7 +28,7 @@ export function PhotoItem({ photo, index }: { photo: PhotoItemProp; index: numbe
 	});
 
 	return (
-		<section className="relative h-[80vh] w-full snap-start snap-always flex items-center justify-center">
+		<section className="relative h-full w-full snap-start snap-always flex items-center justify-center">
 			<div className="relative w-full flex flex-row justify-center gap-2">
 				<motion.div
 					ref={ref}
@@ -87,10 +87,12 @@ export function PhotoItem({ photo, index }: { photo: PhotoItemProp; index: numbe
 
 				<motion.div
 					className="w-full h-full"
-					style={{
-						opacity: progress,
-						// x: progress * 0 + 100 * (1 - progress), // Slides in from right
-					}}
+					style={
+						{
+							// opacity: progress,
+							// x: progress * 0 + 100 * (1 - progress), // Slides in from right
+						}
+					}
 				>
 					<div className="relative aspect-[16/9] w-full">
 						<Image
