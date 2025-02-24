@@ -1,3 +1,4 @@
+"use client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -6,95 +7,61 @@ import { EditionType, EditionTypeSchema, type UploadType } from "@/lib/types";
 import { getTagSuggestions, isValidTag, sanitizeTags } from "@/lib/utils";
 import type { FormMetadata, useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { EditIcon, ImagePlus } from "lucide-react";
+import { EditIcon, ImagePlus, Tag } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { z } from "zod";
 import { LocalSelect, LocalTextArea } from ".";
-import type { SinglePhotoSchema, UploadFormData } from "../UploadForm";
+import type { UploadFormSchema, UploadFormType } from "../UploadForm";
 import { Field, FieldError } from "./ui/Fields";
 import { LocalInput } from "./ui/LocalInput";
+import { MultiSelect } from "./ui/MultiSelect";
 
 // Then modify your PhotosForm props type
 interface PhotosFormProps {
-	form: ReturnType<typeof useForm<UploadFormData>>[0];
-	fields: ReturnType<typeof useForm<UploadFormData>>[1];
+	form: ReturnType<typeof useForm<UploadFormType>>[0];
+	fields: ReturnType<typeof useForm<UploadFormType>>[1];
 	type: UploadType;
 }
 
-export const PhotosForm = ({ form, fields }: PhotosFormProps) => {
-	const [tagInput, setTagInput] = useState("");
-	const photoList = fields.photos.getFieldList();
+export const PhotosForm = ({ form, fields, type }: PhotosFormProps) => {
+	if (!form.value) {
+		return (
+			<div className="space-y-6">
+				<div className="animate-pulse">{/* Add skeleton loading UI here */}</div>
+			</div>
+		);
+	}
 
-	console.log(form.allErrors);
+	const photoList = fields.photos.getFieldList();
 
 	const getTags = (photo: ReturnType<typeof fields.photos.getFieldList>[number]): string[] => {
 		const tagsValue = photo.getFieldset().tags?.value;
-		if (!Array.isArray(tagsValue)) return [];
-		return tagsValue.filter((tag): tag is string => typeof tag === "string");
+		return Array.isArray(tagsValue) ? tagsValue : [];
 	};
 
-	const handleAddTag = (
-		photo: ReturnType<typeof fields.photos.getFieldList>[number],
-		tag: string,
-	) => {
-		const newTag = sanitizeTags(tagInput);
-
-		console.log("here", newTag);
-
-		if (!newTag || !isValidTag(newTag)) return;
-
-		const currentTags = getTags(photo);
-
-		if (currentTags.length >= 10) return;
-		if (currentTags.includes(newTag)) return;
-
-		const updatedTags = [...currentTags, newTag];
-		photo.getFieldset().tags.value = updatedTags;
-
-		form.validate();
-		setTagInput("");
-	};
-
-	const removeTag = (
-		photo: ReturnType<typeof fields.photos.getFieldList>[number],
-		tagToRemove: string,
-	) => {
-		const currentTags = Array.isArray(photo.getFieldset().tags.value)
-			? photo.getFieldset().tags.value
-			: [];
-
-		if (!currentTags) return;
-
-		if (!currentTags.includes(tagToRemove)) return;
-
-		if (typeof currentTags === "string") {
-			photo.getFieldset().tags.value = [];
-			form.validate();
-			return;
-		}
-
-		const updatedTags = currentTags.filter((tag) => tag !== tagToRemove);
-
-		photo.getFieldset().tags.value = updatedTags;
-		form.validate();
-	};
+	console.log("Errors", form.allErrors);
 
 	return (
 		<div className="space-y-6">
 			{photoList.map((photo, index) => (
 				<div
-					key={photo.id}
+					key={photo.key}
 					className="relative p-4 border rounded-none border-dotted border-amber-600/20"
 				>
 					{photoList.length > 1 && (
-						<Button
-							variant="destructive"
-							size="sm"
-							className="absolute top-2 right-2"
-							onClick={() => form.remove(photo)}
-						>
-							Remove
-						</Button>
+						<div className="absolute top-2 right-2">
+							<Button
+								variant="destructive"
+								size="sm"
+								className="absolute top-2 right-2"
+								{...form.remove.getButtonProps({
+									name: fields.photos.name,
+									index,
+								})}
+							>
+								Remove
+							</Button>
+						</div>
 					)}
 					<div className="space-y-4">
 						<Field>
@@ -148,6 +115,12 @@ export const PhotosForm = ({ form, fields }: PhotosFormProps) => {
 									meta={photo.getFieldset().editionSize}
 									defaultValue={photo.getFieldset().editionSize.initialValue}
 									className="rounded-none bg-white dark:bg-black"
+									// value={photo.getFieldset().editionType.value === EditionType.Single && photo.getFieldset().editionSize.value = "1"}
+									onChange={(e) => {
+										if (photo.getFieldset().editionType.value === EditionType.Single) {
+											photo.getFieldset().editionSize.value = "1";
+										}
+									}}
 								/>
 								{photo.getFieldset().editionSize.errors && (
 									<FieldError>{photo.getFieldset().editionSize.errors}</FieldError>
@@ -171,7 +144,7 @@ export const PhotosForm = ({ form, fields }: PhotosFormProps) => {
 						</div>
 
 						<Field>
-							<div className="border-2 border-dashed border-border rounded-none p-8 text-center">
+							<div className="border-2 border-dashed rounded-none p-8 text-center">
 								<LocalInput
 									type="file"
 									accept="image/*"
@@ -210,56 +183,23 @@ export const PhotosForm = ({ form, fields }: PhotosFormProps) => {
 						<Field>
 							<Label htmlFor={photo.getFieldset().tags.name}>Tags</Label>
 							<div className="space-y-2">
-								<LocalInput
+								<MultiSelect
 									meta={photo.getFieldset().tags}
-									type="text"
-									value={tagInput}
-									onChange={(e) => setTagInput(e.target.value)}
-									onKeyDown={(e) => {
-										if (e.key === "Enter") {
-											e.preventDefault();
-											handleAddTag(photo, tagInput);
-										}
-									}}
-									placeholder="Press enter to add tags"
-									className="w-full rounded-none"
+									options={Array.from(new Set(getTagSuggestions("", getTags(photo))))}
+									placeholder="Select or enter tags..."
+									emptyPlaceholder="No tags found. Press enter to create a new tag."
+									defaultValue={getTags(photo)}
+									className="w-full"
 								/>
-								<div className="flex flex-wrap gap-2">
-									{getTags(photo).map((tag) => (
-										<Badge key={tag} variant="secondary" className="px-2 py-1">
-											{tag}
-											<button
-												type="button"
-												onClick={() => removeTag(photo, tag)}
-												className="ml-2 hover:text-destructive"
-											>
-												×
-											</button>
-										</Badge>
-									))}
-								</div>
-								{tagInput.length > 0 && (
-									<div className="absolute z-10 w-fit bg-white dark:bg-black border border-border rounded-none shadow-lg">
-										{getTagSuggestions(tagInput, getTags(photo)).map((suggestion) => (
-											<button
-												key={suggestion}
-												type="button"
-												className="w-full px-4 py-2 text-left hover:bg-muted"
-												onClick={() => handleAddTag(photo, suggestion)}
-											>
-												{suggestion}
-											</button>
-										))}
-									</div>
-								)}
 							</div>
+
 							{photo.getFieldset().tags.errors && (
 								<FieldError>{photo.getFieldset().tags.errors}</FieldError>
 							)}
 						</Field>
 
 						{/* Camera Data */}
-						<div className="space-y-4 border border-border p-4 mt-4">
+						<div className="space-y-4 border p-4 mt-4">
 							<h3 className="font-normal">Camera Information</h3>
 							<div className="grid grid-cols-2 gap-4">
 								<Field>
@@ -296,7 +236,9 @@ export const PhotosForm = ({ form, fields }: PhotosFormProps) => {
 										}
 									/>
 									{photo.getFieldset().cameraData.getFieldset().cameraModel.errors && (
-										<FieldError>{fields.cameraData.getFieldset().cameraModel.errors}</FieldError>
+										<FieldError>
+											{photo.getFieldset().cameraData.getFieldset().cameraModel.errors}
+										</FieldError>
 									)}
 								</Field>
 
@@ -360,42 +302,25 @@ export const PhotosForm = ({ form, fields }: PhotosFormProps) => {
 					</div>
 				</div>
 			))}
-			<Button
-				onClick={() => {
-					form.validate();
-					const hasErrors = Object.keys(form.allErrors).length > 0;
-					if (!hasErrors) {
-						form.insert({
-							photos: {
-								name: "",
-								description: "",
-								editionType: EditionType.Single,
-								editionSize: 1,
-								price: 0,
-								photo: undefined,
-								groupId: "",
-								tags: [],
-								cameraData: {
-									cameraMake: "",
-									cameraModel: "",
-									lens: "",
-									focalLength: "",
-									aperture: "",
-									shutterSpeed: "",
-									iso: "",
-									orientation: "Landscape",
-								},
-							},
-						});
-					}
-				}}
-				className="w-full rounded-none"
-				disabled={!form.valid}
-			>
-				{Object.keys(form.allErrors ?? {}).length > 0
-					? "Please fix form errors before adding another photo"
-					: "Add Another Photo"}
-			</Button>
+			<div className="w-full">
+				<Button
+					onClick={() => {
+						form.validate();
+						if (!form.valid) {
+							return;
+						}
+					}}
+					className="w-full rounded-none"
+					disabled={!form.valid}
+					{...form.insert.getButtonProps({
+						name: fields.photos.name,
+					})}
+				>
+					{Object.keys(form.allErrors ?? {}).length > 0
+						? "Please fix form errors before adding another photo"
+						: "Add Another Photo"}
+				</Button>
+			</div>
 		</div>
 	);
 };

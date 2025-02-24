@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { CollectionCategory } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -21,21 +22,13 @@ export const isValidTag = (tag: string) => {
 	return sanitized.length >= 2 && sanitized.length <= 32 && /[a-z]/.test(sanitized);
 };
 
-export const getTagSuggestions = (input: string, localTags: string[]): string[] => {
-	// You could implement tag suggestions based on
-	// commonly used tags or a predefined list
-	const commonTags = [
-		"nature",
-		"landscape",
-		"portrait",
-		"street",
-		"wildlife",
-		"architecture",
-		"travel",
-		"macro",
-	];
+export const getTagSuggestions = (input: string | unknown, localTags: string[]): string[] => {
+	// Handle case where input is not a string
+	const searchInput = typeof input === "string" ? input : "";
+
+	const commonTags = Object.values(CollectionCategory);
 
 	return commonTags.filter(
-		(tag) => tag.startsWith(input.toLowerCase()) && !localTags.includes(tag),
+		(tag) => tag.toLowerCase().startsWith(searchInput.toLowerCase()) && !localTags.includes(tag),
 	);
 };

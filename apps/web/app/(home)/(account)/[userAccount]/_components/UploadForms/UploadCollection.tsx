@@ -3,7 +3,7 @@ import { usePersistedFormState } from "@/hooks/usePersistedFormState";
 import { CollectionCategorySchema, type UploadType } from "@/lib/types";
 import type { useForm } from "@conform-to/react";
 import { useState } from "react";
-import type { UploadFormData } from "../UploadForm";
+import type { UploadFormType } from "../UploadForm";
 import { PhotosForm } from "./PhotosForm";
 import { Field, FieldError } from "./ui/Fields";
 import { LocalInput } from "./ui/LocalInput";
@@ -11,8 +11,8 @@ import { LocalSelect } from "./ui/LocalSelect";
 import { LocalTextArea } from "./ui/LocalTextArea";
 
 interface UploadCollectionProps {
-	form: ReturnType<typeof useForm<UploadFormData>>[0];
-	fields: ReturnType<typeof useForm<UploadFormData>>[1];
+	form: ReturnType<typeof useForm<UploadFormType>>[0];
+	fields: ReturnType<typeof useForm<UploadFormType>>[1];
 	type: UploadType;
 }
 
@@ -36,7 +36,7 @@ export const UploadCollection = ({ form, fields, type }: UploadCollectionProps) 
 					)}
 				</Field>
 
-				<Field>
+				{/* <Field>
 					<Label htmlFor={fields.collectionCategories.id}>Categories</Label>
 					<LocalSelect
 						placeholder="Categories"
@@ -45,19 +45,8 @@ export const UploadCollection = ({ form, fields, type }: UploadCollectionProps) 
 							value: category,
 							name: category,
 						}))}
-						// className="rounded-none bg-white dark:bg-black"
 					/>
-				</Field>
-
-				<Field>
-					<Label htmlFor={fields.collectionTags.id}>Tags</Label>
-					<LocalInput
-						meta={fields.collectionTags}
-						type="text"
-						className="w-full rounded-none"
-						placeholder="Separate tags with commas"
-					/>
-				</Field>
+				</Field> */}
 
 				{/*Photos */}
 				<div className="mt-5 space-y-4">

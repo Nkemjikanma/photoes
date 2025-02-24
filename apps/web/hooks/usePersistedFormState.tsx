@@ -1,10 +1,32 @@
-import type { UploadFormData } from "@/app/(home)/(account)/[userAccount]/_components/UploadForm";
+import { format } from "node:path/posix";
+import type { UploadFormType } from "@/app/(home)/(account)/[userAccount]/_components/UploadForm";
 import { useCallback, useEffect, useState } from "react";
 
 // Define strict types for stored data
+type StoredPhotoData = Omit<NonNullable<UploadFormType["photos"][number]>, "photo">;
+
+type StoredSingleFormData = {
+	type: "single";
+	photos: StoredPhotoData[];
+	groupId?: string;
+};
+
+type StoredCollectionFormData = {
+	type: "collection";
+	photos: StoredPhotoData[];
+	collectionName: string;
+	collectionDescription: string;
+	collectionCategories: string[];
+	coverImageURI: string;
+	featuredPhotoURI: string;
+};
+
+type StoredFormData = StoredSingleFormData | StoredCollectionFormData;
+
 interface StoredState {
-	formData: Partial<UploadFormData> | null;
+	formData: Partial<StoredFormData> | null;
 }
+
 const FORM_STORAGE_KEY = "photo-upload-form";
 
 export const usePersistedFormState = () => {
@@ -19,12 +41,36 @@ export const usePersistedFormState = () => {
 		}
 	});
 
+	useEffect(() => {
+		try {
+			const saved = localStorage.getItem(FORM_STORAGE_KEY);
+			if (saved) {
+				setStoredState(JSON.parse(saved));
+			}
+		} catch (e) {
+			console.error("Failed to load form state:", e);
+		}
+	}, []);
+
 	const updateState = useCallback((newState: Partial<StoredState>) => {
 		setStoredState((prev) => {
 			const updated = { ...prev, ...newState };
 			if (typeof window !== "undefined") {
 				try {
-					localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(updated));
+					const sanitizedState = {
+						...updated,
+						formData: updated.formData
+							? {
+									...updated.formData,
+									photos: updated.formData.photos?.map((photo: any) => {
+										// Use type assertion and omit photo property
+										const { photo: photoFile, ...rest } = photo;
+										return rest;
+									}),
+								}
+							: null,
+					};
+					localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(sanitizedState));
 				} catch (e) {
 					console.error("Failed to save form state:", e);
 				}
@@ -35,7 +81,11 @@ export const usePersistedFormState = () => {
 
 	const clearState = useCallback(() => {
 		if (typeof window !== "undefined") {
-			localStorage.removeItem(FORM_STORAGE_KEY);
+			try {
+				localStorage.removeItem(FORM_STORAGE_KEY);
+			} catch (e) {
+				console.error("Failed to clear form state:", e);
+			}
 		}
 		setStoredState({ formData: null });
 	}, []);

@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/*
+  ---break---
+*/
+@custom-variant dark (&:is(.dark *));
 
 @variant dark (&:is(.dark *));
 
@@ -151,3 +155,7 @@
 		border-color: " #e4e4e7";
 	}
 }
+
+/*
+  ---break---
+*/
