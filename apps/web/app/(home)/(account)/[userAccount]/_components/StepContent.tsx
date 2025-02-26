@@ -17,6 +17,9 @@ interface StepContentProps {
 export const StepContent = ({ currentStep, form, fields, uploadType }: StepContentProps) => {
 	const [isReady, setIsReady] = useState(false);
 
+	// console.log("fields", fields);
+	// console.log("form: ");
+
 	useEffect(() => {
 		setIsReady(false);
 		const timer = setTimeout(() => setIsReady(true), 0);
@@ -40,7 +43,7 @@ export const StepContent = ({ currentStep, form, fields, uploadType }: StepConte
 				</>
 			);
 		case 1: // Review
-			return <ReviewStep form={form} fields={fields} uploadType={uploadType} />;
+			return <ReviewStep formId={form.id} uploadType={uploadType} />;
 		// case 2: // Upload
 		// 	return <UploadStep form={form} />;
 		// case 3: // Mint

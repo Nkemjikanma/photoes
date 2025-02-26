@@ -16,9 +16,6 @@ type StoredCollectionFormData = {
 	photos: StoredPhotoData[];
 	collectionName: string;
 	collectionDescription: string;
-	collectionCategories: string[];
-	coverImageURI: string;
-	featuredPhotoURI: string;
 };
 
 type StoredFormData = StoredSingleFormData | StoredCollectionFormData;

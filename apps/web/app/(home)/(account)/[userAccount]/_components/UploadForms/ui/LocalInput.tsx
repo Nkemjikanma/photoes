@@ -7,7 +7,7 @@ export const LocalInput = ({
 	type,
 	...props
 }: {
-	meta: FieldMetadata<string>;
+	meta: FieldMetadata;
 	type: Parameters<typeof getInputProps>[1]["type"];
 } & ComponentProps<typeof Input>) => {
 	const inputProps = getInputProps(meta, { type, ariaAttributes: true });

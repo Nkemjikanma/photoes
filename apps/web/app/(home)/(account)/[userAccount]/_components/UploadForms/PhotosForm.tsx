@@ -1,17 +1,14 @@
 "use client";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { usePersistedFormState } from "@/hooks/usePersistedFormState";
-import { EditionType, EditionTypeSchema, type UploadType } from "@/lib/types";
-import { getTagSuggestions, isValidTag, sanitizeTags } from "@/lib/utils";
-import type { FormMetadata, useForm } from "@conform-to/react";
-import { parseWithZod } from "@conform-to/zod";
-import { EditIcon, ImagePlus, Tag } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
-import { z } from "zod";
+import { EditionType, type UploadType } from "@/lib/types";
+import { getTagSuggestions } from "@/lib/utils";
+import type { useForm } from "@conform-to/react";
+import { ImagePlus } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 import { LocalSelect, LocalTextArea } from ".";
-import type { UploadFormSchema, UploadFormType } from "../UploadForm";
+import type { UploadFormType } from "../UploadForm";
 import { Field, FieldError } from "./ui/Fields";
 import { LocalInput } from "./ui/LocalInput";
 import { MultiSelect } from "./ui/MultiSelect";
@@ -36,10 +33,8 @@ export const PhotosForm = ({ form, fields, type }: PhotosFormProps) => {
 
 	const getTags = (photo: ReturnType<typeof fields.photos.getFieldList>[number]): string[] => {
 		const tagsValue = photo.getFieldset().tags?.value;
-		return Array.isArray(tagsValue) ? tagsValue : [];
+		return Array.isArray(tagsValue) ? tagsValue.map(String) : [];
 	};
-
-	console.log("Errors", form.allErrors);
 
 	return (
 		<div className="space-y-6">
@@ -144,26 +139,7 @@ export const PhotosForm = ({ form, fields, type }: PhotosFormProps) => {
 						</div>
 
 						<Field>
-							<div className="border-2 border-dashed rounded-none p-8 text-center">
-								<LocalInput
-									type="file"
-									accept="image/*"
-									meta={photo.getFieldset().photo}
-									className="hidden"
-									id={photo.getFieldset().photo.id}
-									// defaultValue={photo.getFieldset().photo}
-								/>
-								<Label
-									htmlFor={photo.getFieldset().photo.name}
-									className="cursor-pointer flex flex-col items-center"
-								>
-									<ImagePlus className="h-12 w-12 text-muted-foreground" />
-								</Label>
-
-								{photo.getFieldset().photo.errors && (
-									<FieldError>{photo.getFieldset().photo.errors}</FieldError>
-								)}
-							</div>
+							<FileUploadPreview photo={photo} />
 						</Field>
 
 						<Field>
@@ -321,6 +297,59 @@ export const PhotosForm = ({ form, fields, type }: PhotosFormProps) => {
 						: "Add Another Photo"}
 				</Button>
 			</div>
+		</div>
+	);
+};
+
+const FileUploadPreview = ({
+	photo,
+}: {
+	photo: ReturnType<
+		ReturnType<typeof useForm<UploadFormType>>[1]["photos"]["getFieldList"]
+	>[number];
+}) => {
+	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+	useEffect(() => {
+		const file = photo.getFieldset().photo.value;
+		if (file instanceof File) {
+			const objectUrl = URL.createObjectURL(file);
+			setPreviewUrl(objectUrl);
+
+			return () => {
+				URL.revokeObjectURL(objectUrl);
+				setPreviewUrl(null);
+			};
+		}
+	}, [photo.getFieldset().photo.value]);
+
+	return (
+		<div className="border-2 border-dashed rounded-none p-8 text-center">
+			<LocalInput
+				type="file"
+				accept="image/*"
+				meta={photo.getFieldset().photo}
+				className="hidden"
+				id={photo.getFieldset().photo.id}
+			/>
+			<Label
+				htmlFor={photo.getFieldset().photo.id}
+				className="cursor-pointer flex flex-col items-center"
+			>
+				{photo.getFieldset().photo.value instanceof File && previewUrl ? (
+					<div className="flex flex-col items-center">
+						<img src={previewUrl} alt="Preview" className="w-32 h-32 object-cover mb-2" />
+						<span className="text-sm text-muted-foreground">
+							{(photo.getFieldset().photo.value as File).name}
+						</span>
+					</div>
+				) : (
+					<ImagePlus className="h-12 w-12 text-muted-foreground" />
+				)}
+			</Label>
+
+			{photo.getFieldset().photo.errors && (
+				<FieldError>{photo.getFieldset().photo.errors}</FieldError>
+			)}
 		</div>
 	);
 };

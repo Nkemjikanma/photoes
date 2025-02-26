@@ -1,13 +1,16 @@
 import { z } from "zod";
 
-export type UploadType = "single" | "collection";
+export enum UploadType {
+	Single = "single",
+	Collection = "collection",
+}
 
 export enum EditionType {
 	Single = "SINGLE", // ERC721
 	Multiple = "MULTIPLE", // ERC1155
 }
 
-export const EditionTypeSchema = z.enum(["SINGLE", "MULTIPLE"]);
+export const EditionTypeEnum = z.enum(["SINGLE", "MULTIPLE"]);
 
 export enum CollectionCategory {
 	Photography = "PHOTOGRAPHY",
@@ -34,7 +37,7 @@ export enum CollectionCategory {
 	Other = "OTHER", // Miscellaneous
 }
 
-export const CollectionCategorySchema = z.enum([
+export const CollectionCategoryEnum = z.enum([
 	"PHOTOGRAPHY",
 	"ART",
 	"PORTRAIT",

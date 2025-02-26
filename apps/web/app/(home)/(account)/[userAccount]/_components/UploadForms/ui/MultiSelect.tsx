@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { type FieldMetadata, unstable_useControl as useControl } from "@conform-to/react";
 
 interface MultiSelectProps {
-	meta: FieldMetadata<string>;
+	meta: FieldMetadata;
 	options?: string[];
 	placeholder?: string;
 	emptyPlaceholder?: string;
