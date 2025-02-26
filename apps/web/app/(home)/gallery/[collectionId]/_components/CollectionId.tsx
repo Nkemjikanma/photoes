@@ -37,7 +37,6 @@ export const CollectionId = () => {
 	];
 	return (
 		<>
-			{" "}
 			<div className="flex justify-between py-4 w-10/12">
 				<a href="/gallery" className="text-sm text-zinc-500 hover:text-zinc-800 flex items-center">
 					<MoveLeft className="h-4 w-4 mr-1" />
@@ -45,7 +44,7 @@ export const CollectionId = () => {
 				</a>
 				<CommandSearch />
 			</div>
-			<div className="relative w-10/12 h-screen snap-y snap-mandatory">
+			<div className="relative flex flex-col mt-10 mb-64 gap-64 w-10/12 snap-y snap-mandatory ">
 				{photos.map((photo, index) => (
 					<PhotoItem key={photo.id} photo={photo} index={index} />
 				))}
